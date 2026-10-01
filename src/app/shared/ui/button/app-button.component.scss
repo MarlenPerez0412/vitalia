@@ -1,0 +1,21 @@
+:host { display: inline-block; min-width: 0; }
+:host:has(.button--block) { display: block; width: 100%; }
+.button { align-items: center; border: 1px solid transparent; border-radius: var(--radius-md); cursor: pointer; display: inline-flex; font-weight: 780; gap: var(--space-2); justify-content: center; min-height: var(--touch-target); min-width: 3rem; padding: .7rem 1.1rem; transition: background-color var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast), color var(--motion-fast), transform var(--motion-fast); }
+.button:hover:not(:disabled) { box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.button:active:not(:disabled) { box-shadow: none; transform: translateY(1px) scale(.99); }
+.button:focus-visible { box-shadow: var(--shadow-focus); outline: 0; }
+.button:disabled { cursor: not-allowed; opacity: .5; }
+.button--block { width: 100%; }
+.button--primary { background: var(--color-primary); color: var(--color-on-primary); }
+.button--primary:hover:not(:disabled) { background: var(--color-primary-hover); }
+.button--primary:active:not(:disabled) { background: var(--color-primary-active); }
+.button--secondary { background: var(--color-secondary); color: var(--color-on-primary); }
+.button--secondary:hover:not(:disabled) { background: var(--color-secondary-hover); }
+.button--ghost { background: transparent; border-color: var(--color-border-strong); color: var(--color-primary); }
+.button--ghost:hover:not(:disabled) { background: var(--color-primary-soft); border-color: var(--color-primary); }
+.button--voice { background: var(--color-secondary-soft); border-color: color-mix(in srgb, var(--color-secondary) 35%, transparent); color: var(--color-secondary-hover); }
+.button--emergency { background: var(--color-emergency); color: var(--color-on-primary); }
+.button--emergency:hover:not(:disabled) { background: var(--color-emergency-hover); }
+.spinner { animation: spin .8s linear infinite; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; height: 1.15rem; width: 1.15rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.6s; } }

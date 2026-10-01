@@ -1,0 +1,11 @@
+:host { display: block; }
+section { align-items: center; background: var(--color-surface); border: 1px dashed var(--color-border-strong); border-radius: var(--radius-xl); display: flex; flex-direction: column; justify-content: center; min-height: 16rem; padding: var(--space-6); text-align: center; }
+.icon { align-items: center; background: var(--color-primary-soft); border-radius: 50%; color: var(--color-primary); display: inline-flex; height: 4rem; justify-content: center; width: 4rem; }
+.icon--error { background: var(--color-alert-soft); color: var(--color-alert); }
+h2 { font-size: var(--font-size-card-title); margin: var(--space-4) 0 var(--space-2); }
+p { color: var(--color-text-muted); margin: 0; max-width: 34rem; }
+.action { margin-top: var(--space-4); }
+.action:empty { display: none; }
+.loader { animation: spin 1s linear infinite; border: .25rem solid var(--color-primary-soft); border-right-color: var(--color-primary); border-radius: 50%; height: 3rem; width: 3rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .loader { animation-duration: 2s; } }

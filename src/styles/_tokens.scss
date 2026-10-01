@@ -1,0 +1,121 @@
+$breakpoint-xs: 20rem;
+$breakpoint-sm: 30rem;
+$breakpoint-md: 48rem;
+$breakpoint-lg: 64rem;
+$breakpoint-xl: 90rem;
+
+:root {
+  /* Marca VITALIA AgeTech (valores de referencia; usar los semanticos en componentes). */
+  --vitalia-teal: #118f88;
+  --vitalia-teal-dark: #0b5e5a;
+  --vitalia-turquoise: #39b8c7;
+  --vitalia-blue: #55b7e8;
+  --vitalia-green-soft: #a8e4ce;
+  --vitalia-blue-soft: #b7dcf4;
+  --vitalia-yellow-soft: #f4d875;
+  --vitalia-coral-soft: #f49a86;
+  --vitalia-lilac-soft: #c9b6f3;
+  --vitalia-emergency: #e54842;
+  --vitalia-emergency-dark: #c93431;
+  --vitalia-background: #f4faf9;
+  --vitalia-surface: #ffffff;
+  --vitalia-text: #173b38;
+  --vitalia-text-muted: #637a77;
+
+  /* Semanticos: derivados de la marca y ajustados para contraste WCAG 2.2 AA (ver DECISIONS D012). */
+  --color-primary: #0e7a74;
+  --color-primary-hover: var(--vitalia-teal-dark);
+  --color-primary-active: #094b48;
+  --color-primary-soft: #e6f5f3;
+  --color-secondary: #137987;
+  --color-secondary-hover: #0e6370;
+  --color-secondary-soft: #e2f4f7;
+  --color-background: var(--vitalia-background);
+  --color-surface: var(--vitalia-surface);
+  --color-surface-raised: #ffffff;
+  --color-surface-muted: #eaf3f2;
+  --color-border: #d5e4e2;
+  --color-border-strong: #7a9491;
+  --color-text: var(--vitalia-text);
+  --color-text-muted: #566d6a;
+  --color-text-subtle: #6b817e;
+  --color-text-on-tint: #3d5451;
+  --color-success: #167451;
+  --color-success-soft: #e2f4eb;
+  --color-warning: #8f5a00;
+  --color-warning-soft: #fff4d9;
+  --color-alert: #e7655b;
+  --color-alert-hover: #b8443c;
+  --color-alert-soft: #fff0ed;
+  --color-emergency: var(--vitalia-emergency-dark);
+  --color-emergency-hover: #a92c29;
+  --color-emergency-soft: #fff0ee;
+  --color-emergency-bright: var(--vitalia-emergency);
+  --color-info: #176f92;
+  --color-info-soft: #e5f3f9;
+  --color-on-primary: #ffffff;
+  --color-sidebar-start: var(--vitalia-teal-dark);
+  --color-sidebar-end: #083f3d;
+  --color-overlay: rgb(11 45 43 / .5);
+
+  /* Modulos Senior: colores suaves de fondo (texto siempre --color-text o --color-text-on-tint). */
+  --color-module-health: var(--vitalia-coral-soft);
+  --color-module-pensions: var(--vitalia-yellow-soft);
+  --color-module-selfcare: var(--vitalia-lilac-soft);
+  --color-module-security: var(--vitalia-green-soft);
+  --color-module-entertainment: var(--vitalia-blue-soft);
+  --color-module-family: #b5e4ea;
+  --color-lia-start: var(--vitalia-turquoise);
+  --color-lia-end: var(--vitalia-blue);
+  --color-lia-text: #0b3a3f;
+
+  --space-1: .25rem;
+  --space-2: .5rem;
+  --space-3: .75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 2.5rem;
+  --space-8: 3rem;
+  --space-10: 4rem;
+  --space-12: 5rem;
+
+  --radius-sm: .75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.5rem;
+  --radius-pill: 999px;
+  --shadow-xs: 0 .15rem .6rem rgb(23 59 56 / .06);
+  --shadow-sm: 0 .4rem 1.4rem rgb(23 59 56 / .09);
+  --shadow-md: 0 .8rem 2rem rgb(23 59 56 / .12);
+  --shadow-lg: 0 1.4rem 3.5rem rgb(23 59 56 / .16);
+  --shadow-focus: 0 0 0 .25rem rgb(19 121 135 / .28);
+  --shadow-emergency-sm: 0 .6rem 1.8rem rgb(201 52 49 / .26);
+  --shadow-emergency-md: 0 .8rem 2.2rem rgb(201 52 49 / .34);
+
+  --font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-size-body: 1rem;
+  --font-size-caption: .8125rem;
+  --font-size-small: .9rem;
+  --font-size-lead: clamp(1.05rem, 1rem + .35vw, 1.25rem);
+  --font-size-card-title: clamp(1.125rem, 1.05rem + .3vw, 1.3rem);
+  --font-size-heading: clamp(1.75rem, 1.35rem + 1.7vw, 2.75rem);
+  --font-size-title: clamp(2rem, 1.55rem + 2vw, 3.25rem);
+  --line-height: 1.55;
+  --line-height-tight: 1.2;
+
+  --page-gutter: clamp(1rem, 3vw, 2rem);
+  --content-max: 76rem;
+  --sidebar-expanded: 17.5rem;
+  --sidebar-collapsed: 5.5rem;
+  --topbar-height: 4.75rem;
+  --touch-target: 3rem;
+  --focus-ring: .1875rem solid var(--color-secondary);
+  --motion-fast: 140ms ease;
+  --motion-normal: 220ms ease;
+  --motion-slow: 320ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --motion-fast: 0ms; --motion-normal: 0ms; }
+}

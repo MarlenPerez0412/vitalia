@@ -1,0 +1,9 @@
+.comparison { background: linear-gradient(145deg, var(--color-primary), var(--color-secondary)); border-radius: var(--radius-xl); color: var(--color-on-primary); padding: var(--space-5); }
+.comparison strong { font-size: var(--font-size-card-title); }.comparison p { margin: var(--space-1) 0 0; opacity: .88; }
+.metrics { display: grid; gap: var(--space-3); }
+article { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-4); }
+.metric-top { align-items: center; display: flex; gap: var(--space-3); justify-content: space-between; }
+h2 { font-size: 1.05rem; margin: 0; }
+.bar { background: var(--color-surface-muted); border-radius: var(--radius-pill); height: .7rem; margin-top: var(--space-3); overflow: hidden; }
+.bar span { background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); border-radius: inherit; display: block; height: 100%; }
+article p, .disclaimer { color: var(--color-text-muted); }.disclaimer { font-size: var(--font-size-small); margin: 0; }

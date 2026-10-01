@@ -1,0 +1,4 @@
+:host { display: block; min-width: 0; }
+.map { border: 1px solid var(--color-border); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); height: clamp(18rem, 55vh, 32rem); min-width: 0; overflow: hidden; width: 100%; z-index: 0; }
+:host ::ng-deep .leaflet-control-zoom a { align-items: center; color: var(--color-text); display: flex; font: 800 1.25rem/1 var(--font-family); justify-content: center; min-height: 2.75rem; min-width: 2.75rem; }
+:host ::ng-deep .leaflet-popup-content { font-family: var(--font-family); font-weight: 700; }

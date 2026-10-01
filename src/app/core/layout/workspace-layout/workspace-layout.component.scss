@@ -1,0 +1,13 @@
+:host { display: block; min-height: 100dvh; }
+.workspace-shell { background: radial-gradient(circle at 90% 0%, var(--color-secondary-soft), transparent 28rem), var(--color-background); min-height: 100dvh; }
+.workspace-content { min-height: 100dvh; min-width: 0; }
+app-topbar { position: sticky; top: 0; z-index: 30; }
+main { margin: 0 auto; max-width: calc(var(--content-max) + 2 * var(--page-gutter)); min-width: 0; padding: var(--space-6) var(--page-gutter) var(--space-10); }
+@media (min-width: 48rem) {
+  .workspace-shell { display: grid; grid-template-columns: var(--sidebar-collapsed) minmax(0, 1fr); transition: grid-template-columns var(--motion-normal); }
+}
+@media (min-width: 64rem) {
+  .workspace-shell { grid-template-columns: var(--sidebar-expanded) minmax(0, 1fr); }
+  .workspace-shell.sidebar-collapsed { grid-template-columns: var(--sidebar-collapsed) minmax(0, 1fr); }
+  main { padding: var(--space-8) clamp(2rem, 4vw, 4rem) var(--space-12); }
+}

@@ -1,0 +1,26 @@
+@use 'styles/tokens';
+
+*, *::before, *::after { box-sizing: border-box; }
+html { color-scheme: light; min-width: 20rem; scroll-behavior: smooth; }
+body { background: var(--color-background); color: var(--color-text); font-family: var(--font-family); font-size: var(--font-size-body); line-height: var(--line-height); margin: 0; min-width: 20rem; overflow-x: clip; text-rendering: optimizeLegibility; }
+button, input, select, textarea { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: var(--focus-ring); outline-offset: .2rem; }
+img, svg { display: block; max-width: 100%; }
+h1, h2, h3, p { overflow-wrap: anywhere; }
+.v-field { display: grid; gap: var(--space-2); min-width: 0; }
+.v-field > label { font-size: var(--font-size-small); font-weight: 750; }
+.v-field__hint { color: var(--color-text-muted); font-size: var(--font-size-caption); margin: 0; }
+.v-input { appearance: none; background: var(--color-surface-raised); border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); color: var(--color-text); min-height: var(--touch-target); min-width: 0; padding: .75rem 1rem; transition: border-color var(--motion-fast), box-shadow var(--motion-fast); width: 100%; }
+.v-input:hover { border-color: var(--color-primary); }
+.v-input:focus { border-color: var(--color-secondary); box-shadow: var(--shadow-focus); outline: 0; }
+.v-input:disabled { background: var(--color-surface-muted); color: var(--color-text-subtle); cursor: not-allowed; }
+.v-input[aria-invalid='true'] { border-color: var(--color-alert); }
+.v-form-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
+.v-surface { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); }
+.sr-only { height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; width: 1px; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+.mode-accessible { font-size: 112.5%; --touch-target: 3.25rem; --page-gutter: clamp(1rem, 4vw, 2.5rem); }
+.mode-assisted .button--voice { box-shadow: var(--shadow-focus); font-size: 1.08rem; min-height: 3.5rem; }
+.mode-simplified .secondary-action { display: none !important; }
+.mode-simplified { --space-6: 1.5rem; --space-8: 2rem; --shadow-sm: none; --shadow-md: none; }

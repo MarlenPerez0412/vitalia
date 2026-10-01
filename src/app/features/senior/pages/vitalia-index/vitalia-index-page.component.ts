@@ -1,0 +1,22 @@
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { MetricCardComponent } from '../../../../shared/ui/cards/metric-card.component';
+import { StatusBadgeComponent } from '../../../../shared/ui/status-badge/status-badge.component';
+import { SeniorPageComponent } from '../../components/senior-page/senior-page.component';
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [MetricCardComponent, SeniorPageComponent, StatusBadgeComponent],
+  selector: 'app-vitalia-index-page',
+  template: `
+    <app-senior-page eyebrow="Resumen personal" title="Índice VITALIA" description="Una referencia sencilla construida con tus hábitos autorizados." backPath="/senior/health">
+      <div class="score"><div><strong>86</strong><span>/ 100</span></div><app-status-badge variant="success">ESTABLE</app-status-badge><p>Tu rutina general se mantiene cercana a lo habitual.</p></div>
+      <div class="senior-page__grid"><app-metric-card label="Medicamentos" value="95%" detail="Plan casi completo" icon="pill" /><app-metric-card label="Actividad" value="Habitual" detail="Movimiento similar a tu rutina" /><app-metric-card label="Bienestar" value="Estable" detail="Sin cambios importantes" icon="heart" /><app-metric-card label="Cognición" value="Habitual" detail="Actividad constante" icon="brain" /><app-metric-card label="Interacción" value="Normal" detail="Contacto frecuente" icon="users" /></div>
+      <div class="senior-page__notice senior-page__notice--warning"><p><strong>No es un diagnóstico.</strong><span>Este índice orientativo no sustituye la valoración de un profesional de salud.</span></p></div>
+    </app-senior-page>
+  `,
+  styles: `
+    .score { align-items: center; background: linear-gradient(145deg, var(--color-primary-soft), var(--color-secondary-soft)); border: 1px solid var(--color-border); border-radius: var(--radius-xl); display: flex; flex-wrap: wrap; gap: var(--space-4); padding: clamp(1.25rem, 4vw, 2rem); }
+    .score > div { align-items: baseline; display: flex; }.score strong { font-size: clamp(3rem, 9vw, 5.5rem); line-height: .9; }.score span { color: var(--color-text-muted); font-size: 1.25rem; }.score p { color: var(--color-text-muted); flex: 1 1 18rem; margin: 0; }
+  `,
+})
+export class VitaliaIndexPageComponent {}

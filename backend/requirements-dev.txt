@@ -1,0 +1,4 @@
+-r requirements.txt
+# Solo pruebas: TestClient de FastAPI necesita httpx.
+pytest>=8
+httpx>=0.27

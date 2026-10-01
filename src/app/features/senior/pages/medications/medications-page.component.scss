@@ -1,0 +1,5 @@
+.timeline { display: grid; gap: var(--space-4); min-width: 0; }
+.period-heading { align-items: center; display: flex; gap: var(--space-3); }
+.period-heading > span { align-items: center; background: var(--color-secondary-soft); border-radius: 50%; color: var(--color-secondary); display: inline-flex; flex: 0 0 3rem; font-size: 1.4rem; height: 3rem; justify-content: center; }
+.period-heading h2 { font-size: var(--font-size-card-title); margin: 0; }
+.period-heading p { color: var(--color-text-muted); margin: 0; }

@@ -1,0 +1,12 @@
+:host { display: contents; }
+.backdrop { background: var(--color-overlay); inset: 0; position: fixed; z-index: 90; }
+.panel { background: var(--color-surface); border-radius: var(--radius-xl) var(--radius-xl) 0 0; bottom: 0; box-shadow: var(--shadow-lg); box-sizing: border-box; color: var(--color-text); display: grid; gap: var(--space-3); left: 0; max-height: 90vh; overflow-y: auto; padding: var(--space-6) var(--space-4) var(--space-5); position: fixed; right: 0; z-index: 100; }
+.icon { align-items: center; background: var(--color-primary-soft); border-radius: 50%; color: var(--color-primary); display: inline-flex; height: 3.5rem; justify-content: center; width: 3.5rem; }
+.icon--danger { background: var(--color-emergency-soft); color: var(--color-emergency); }
+h2 { font-size: var(--font-size-card-title); line-height: var(--line-height-tight); margin: 0; }
+p { margin: 0; }
+.note { align-items: center; background: var(--color-surface-muted); border-radius: var(--radius-md); color: var(--color-text-muted); display: flex; font-weight: 700; gap: var(--space-2); padding: var(--space-3); }
+.actions { display: grid; gap: var(--space-2); margin-top: var(--space-2); }
+@media (min-width: 48rem) {
+  .panel { border-radius: var(--radius-xl); bottom: auto; left: 50%; max-width: 32rem; padding: var(--space-6); right: auto; top: 50%; transform: translate(-50%, -50%); width: calc(100% - 2 * var(--space-6)); }
+}

@@ -1,0 +1,17 @@
+:host { display: block; }
+.backdrop { background: var(--color-overlay); border: 0; inset: 0; position: fixed; z-index: 60; }
+aside { background: var(--color-surface); bottom: 0; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; gap: var(--space-5); left: 0; max-width: 20rem; padding: var(--space-4); overflow-y: auto; overscroll-behavior: contain; position: fixed; top: 0; width: min(88vw, 20rem); z-index: 70; }
+.drawer-header { align-items: center; display: flex; justify-content: space-between; }
+.brand { align-items: center; color: var(--color-primary); display: flex; font-weight: 900; gap: var(--space-2); letter-spacing: .06em; text-decoration: none; }
+.brand > span { align-items: center; background: linear-gradient(145deg, var(--color-primary), var(--color-secondary)); border-radius: .8rem; color: var(--color-on-primary); display: inline-flex; height: 2.5rem; justify-content: center; width: 2.5rem; }
+.drawer-header button { align-items: center; background: transparent; border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text); display: inline-flex; height: var(--touch-target); justify-content: center; width: var(--touch-target); }
+.identity { align-items: center; background: var(--color-primary-soft); border-radius: var(--radius-lg); display: flex; gap: var(--space-3); min-width: 0; padding: var(--space-3); }
+.identity > span { align-items: center; background: var(--color-primary); border-radius: 50%; color: var(--color-on-primary); display: inline-flex; flex: 0 0 2.7rem; font-weight: 850; height: 2.7rem; justify-content: center; }
+.identity > div { min-width: 0; }
+.identity strong, .identity small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.identity small { color: var(--color-text-muted); font-size: var(--font-size-caption); }
+nav { display: grid; gap: var(--space-2); }
+nav a, .logout { align-items: center; border-radius: var(--radius-md); color: var(--color-text); display: flex; font-weight: 750; gap: var(--space-3); min-height: var(--touch-target); padding: .7rem .85rem; text-decoration: none; }
+nav a.active { background: var(--color-primary-soft); color: var(--color-primary); }
+.logout { background: transparent; border: 1px solid var(--color-border); margin-top: auto; width: 100%; }
+@media (min-width: 48rem) { :host(:not(.all-widths)) { display: none; } }
