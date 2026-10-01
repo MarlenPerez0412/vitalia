@@ -28,7 +28,7 @@ import { VoiceCommandDialogsComponent } from '../voice-command-bar/voice-command
         }
       </div>
       <router-outlet />
-      <app-voice-command-bar layoutAside />
+      <app-voice-command-bar layoutAside [isLia]="isLiaPage()" />
       <app-voice-command-dialogs layoutOverlay />
     </app-senior-layout>
   `,
@@ -48,6 +48,7 @@ export class SeniorShellComponent implements OnDestroy {
   private readonly speech = inject(LiaSpeechService);
   private readonly url = toSignal(this.router.events.pipe(filter((event) => event instanceof NavigationEnd), map(() => this.router.url)), { initialValue: this.router.url });
   protected readonly showEmergencyBanner = computed(() => this.emergency.inProgress() && !this.url().startsWith('/senior/emergency'));
+  protected readonly isLiaPage = computed(() => this.url().startsWith('/senior/lia'));
 
   protected goEmergency(): void { void this.router.navigateByUrl('/senior/emergency'); }
 

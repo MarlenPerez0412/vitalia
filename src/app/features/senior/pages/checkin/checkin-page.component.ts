@@ -16,16 +16,40 @@ import { SeniorStateService } from '../../services/senior-state.service';
       <div class="senior-page__panel question">
         @switch (step()) {
           @case (0) {
-            <h2>¿Cómo te sientes hoy?</h2><div class="senior-page__choice-grid">@for (option of moods; track option.label) { <button class="senior-page__choice" [class.selected]="mood() === option.value" [attr.aria-pressed]="mood() === option.value" type="button" (click)="mood.set(option.value)">{{ option.label }}</button> }</div>
+            <h2>¿Cómo te sientes hoy?</h2>
+            <div class="senior-page__choice-grid">
+              @for (option of moods; track option.label) {
+                <button class="senior-page__choice" [class.selected]="mood() === option.value" [attr.aria-pressed]="mood() === option.value" [attr.aria-label]="'Seleccionar estado de ánimo: ' + option.label" type="button" (click)="mood.set(option.value)">
+                  <span class="choice-emoji" aria-hidden="true">{{ option.emoji }}</span>
+                  <span>{{ option.label }}</span>
+                </button>
+              }
+            </div>
           }
           @case (1) {
-            <h2>¿Cómo dormiste?</h2><div class="senior-page__choice-grid">@for (option of sleepOptions; track option.label) { <button class="senior-page__choice" [class.selected]="sleep() === option.value" [attr.aria-pressed]="sleep() === option.value" type="button" (click)="sleep.set(option.value)">{{ option.label }}</button> }</div>
+            <h2>¿Cómo dormiste?</h2>
+            <div class="senior-page__choice-grid">
+              @for (option of sleepOptions; track option.label) {
+                <button class="senior-page__choice" [class.selected]="sleep() === option.value" [attr.aria-pressed]="sleep() === option.value" [attr.aria-label]="'Seleccionar calidad de sueño: ' + option.label" type="button" (click)="sleep.set(option.value)">
+                  <span class="choice-emoji" aria-hidden="true">{{ option.emoji }}</span>
+                  <span>{{ option.label }}</span>
+                </button>
+              }
+            </div>
           }
           @case (2) {
-            <h2>¿Tienes alguna molestia?</h2><div class="senior-page__choice-grid">@for (option of discomfortOptions; track option) { <button class="senior-page__choice" [class.selected]="discomfort() === option" [attr.aria-pressed]="discomfort() === option" type="button" (click)="discomfort.set(option)">{{ option }}</button> }</div>
+            <h2>¿Tienes alguna molestia?</h2>
+            <div class="senior-page__choice-grid">
+              @for (option of discomfortOptions; track option.label) {
+                <button class="senior-page__choice" [class.selected]="discomfort() === option.label" [attr.aria-pressed]="discomfort() === option.label" [attr.aria-label]="'Seleccionar molestia: ' + option.label" type="button" (click)="discomfort.set(option.label)">
+                  <span class="choice-emoji" aria-hidden="true">{{ option.emoji }}</span>
+                  <span>{{ option.label }}</span>
+                </button>
+              }
+            </div>
           }
           @case (3) {
-            <h2>¿Quieres contarme algo?</h2><p>Esta nota es opcional.</p><label class="sr-only" for="wellbeing-note">Nota sobre tu día</label><textarea id="wellbeing-note" class="v-input" rows="5" [(ngModel)]="note" placeholder="Escribe aquí con tus propias palabras…"></textarea>
+            <h2>💬 ¿Quieres contarme algo?</h2><p>Esta nota es opcional.</p><label class="sr-only" for="wellbeing-note">Nota sobre tu día</label><textarea id="wellbeing-note" class="v-input" rows="5" [(ngModel)]="note" placeholder="Escribe aquí con tus propias palabras… 💬"></textarea>
           }
           @default {
             <div class="complete" role="status"><span><app-vitalia-icon name="check" [size]="34" /></span><h2>Tu check-in quedó guardado</h2><p>Gracias, María. Puedes consultar tu Firma VITALIA o volver al inicio.</p><div class="senior-page__actions"><app-button (pressed)="go('/senior/signature')">Ver Firma VITALIA</app-button><app-button variant="ghost" (pressed)="go('/senior')">Volver al inicio</app-button></div></div>
@@ -45,9 +69,25 @@ export class CheckinPageComponent {
   protected readonly sleep = signal<number | null>(null);
   protected readonly discomfort = signal('');
   protected note = '';
-  protected readonly moods = [{ label: 'Muy bien', value: 5 }, { label: 'Bien', value: 4 }, { label: 'Regular', value: 3 }, { label: 'Mal', value: 2 }, { label: 'Muy mal', value: 1 }] as const;
-  protected readonly sleepOptions = [{ label: 'Muy bien', value: 5 }, { label: 'Bien', value: 4 }, { label: 'Más o menos', value: 3 }, { label: 'Dormí poco', value: 2 }] as const;
-  protected readonly discomfortOptions = ['No tengo molestias', 'Molestia leve', 'Molestia moderada', 'Necesito apoyo'] as const;
+  protected readonly moods = [
+    { label: 'Muy bien', emoji: '😄', value: 5 },
+    { label: 'Bien', emoji: '🙂', value: 4 },
+    { label: 'Regular', emoji: '😐', value: 3 },
+    { label: 'Mal', emoji: '😟', value: 2 },
+    { label: 'Muy mal', emoji: '😢', value: 1 },
+  ] as const;
+  protected readonly sleepOptions = [
+    { label: 'Muy bien', emoji: '😴✨', value: 5 },
+    { label: 'Bien', emoji: '😌', value: 4 },
+    { label: 'Más o menos', emoji: '😕', value: 3 },
+    { label: 'Dormí poco', emoji: '🥱', value: 2 },
+  ] as const;
+  protected readonly discomfortOptions = [
+    { label: 'No tengo molestias', emoji: '✅' },
+    { label: 'Molestia leve', emoji: '🙂' },
+    { label: 'Molestia moderada', emoji: '🤕' },
+    { label: 'Necesito apoyo', emoji: '🆘' },
+  ] as const;
 
   protected get canContinue(): boolean { return (this.step() === 0 && this.mood() !== null) || (this.step() === 1 && this.sleep() !== null) || (this.step() === 2 && !!this.discomfort()) || this.step() === 3; }
   protected previous(): void { this.step.update((value) => Math.max(0, value - 1)); }

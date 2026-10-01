@@ -1,0 +1,39 @@
+:host { display: block; }
+.detail-page { display: grid; gap: var(--space-4); margin: 0 auto; max-width: 68rem; padding: var(--space-4) 0 var(--space-8); }
+.back-link, .calendar-link { align-items: center; background: transparent; border: 0; color: var(--color-primary); cursor: pointer; display: inline-flex; font: inherit; font-weight: 800; gap: .35rem; justify-self: start; padding: .35rem 0; }
+.detail-header { display: grid; gap: var(--space-2); }
+.eyebrow { color: var(--color-primary); font-size: var(--font-size-small); font-weight: 800; margin: 0; text-transform: uppercase; }
+h1 { font-size: clamp(1.8rem, 4vw, 2.5rem); line-height: 1.1; margin: 0; }
+.detail-header > p:last-child { color: var(--color-text-muted); font-size: 1.05rem; margin: 0; }
+.content-grid { display: grid; gap: var(--space-3); grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.highlight, .info-card, .agenda, .movements { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: var(--space-4); }
+.highlight { background: color-mix(in srgb, #F4D875 28%, white); border-color: #d8ba4c; display: grid; gap: .45rem; grid-column: 1 / -1; }
+.highlight span, .info-card p, .info-card small, .agenda-item small { color: var(--color-text-muted); }
+.highlight strong { color: var(--color-text); font-size: 1.5rem; }
+.highlight small { color: var(--color-primary-hover); font-weight: 800; }
+.info-card { display: grid; gap: var(--space-2); align-content: start; }
+.info-card h2, .agenda h2, .movements h2 { font-size: 1.1rem; margin: 0; }
+.info-card p { margin: 0; }
+.info-card ul { display: grid; gap: .55rem; margin: 0; padding-left: 1.2rem; }
+.action-row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.status { background: var(--color-warning-soft); border-radius: var(--radius-pill); color: var(--color-warning); font-size: var(--font-size-small); font-weight: 800; justify-self: start; padding: .3rem .7rem; }
+.status--ok { background: var(--color-primary-soft); color: var(--color-primary-hover); }
+.progress { background: var(--color-border); border-radius: var(--radius-pill); height: .65rem; overflow: hidden; }
+.progress span { background: var(--color-primary); display: block; height: 100%; width: 50%; }
+.agenda { display: grid; gap: var(--space-3); }
+.agenda-item { align-items: center; display: flex; gap: var(--space-3); }
+.agenda-icon { align-items: center; background: var(--color-primary-soft); border-radius: var(--radius-md); color: var(--color-primary); display: inline-flex; flex: 0 0 2.5rem; height: 2.5rem; justify-content: center; }
+.agenda-item > span:last-child { display: grid; gap: .2rem; }
+.periods { display: flex; flex-wrap: wrap; gap: .5rem; }
+.periods button { background: var(--color-surface); border: 1px solid var(--color-border-strong); border-radius: var(--radius-pill); color: var(--color-primary); cursor: pointer; min-height: var(--touch-target); padding: .5rem .9rem; }
+.periods .period--active { background: var(--color-primary); color: var(--color-on-primary); }
+.movements { display: grid; gap: 0; overflow-x: auto; }
+.movement-head, .movement { align-items: center; display: grid; gap: var(--space-3); grid-template-columns: 1.2fr 1fr 1fr .7fr; min-width: 38rem; padding: .85rem 0; }
+.movement-head { border-bottom: 2px solid var(--color-border); color: var(--color-text-muted); font-size: var(--font-size-small); font-weight: 800; }
+.movement { border-bottom: 1px solid var(--color-border); }
+.movement:last-child { border-bottom: 0; }
+.movement strong { color: var(--color-primary-hover); }
+.empty { color: var(--color-text-muted); margin: var(--space-3) 0 0; }
+.notice { background: var(--color-primary-soft); border-radius: var(--radius-md); color: var(--color-primary-hover); font-weight: 800; margin: 0; padding: var(--space-3); }
+.calendar-link { border-top: 1px solid var(--color-border); justify-self: stretch; padding-top: var(--space-4); }
+@media (max-width: 48rem) { .detail-page { padding-inline: var(--space-2); } .content-grid { grid-template-columns: 1fr; } .highlight { grid-column: auto; } }

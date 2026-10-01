@@ -275,3 +275,241 @@ Voz de salida (TTS) para LIA, sin tocar Vosk, FastAPI, comandos, rutas ni diseñ
 ### Pendientes
 - Comprobar en el Edge habitual que se elige Dalia y probar el eco con altavoz y micrófono reales.
 - `speech-synthesis-voices.debug.ts` sigue aislado y sin uso; puede eliminarse.
+
+## 2026-10-01 - Notificaciones funcionales por rol
+
+- Se reemplazó el botón deshabilitado de notificaciones del Topbar por `NotificationBellComponent`, sin cambiar estilos ni iconos globales.
+- Se crearon `NotificationService`, `NotificationEventsService`, la semilla `core/mock/notifications.seed.json` y `resolveJsonModule` en `tsconfig.json` (no existe `src/assets`; los estáticos viven en `public/`).
+- Se añadió `skipMedication` y el estado `SKIPPED` (sin botón nuevo en la UI) y el id de emergencia ahora incluye sufijo aleatorio para evitar colisiones en el mismo milisegundo.
+- Validación: `npm run build` sin errores y 172 pruebas pasando.
+- Pendientes: ver `docs/STATUS.md`.
+
+## 2026-10-01 - Notificaciones: sincronización y pendientes
+
+- Sincronización entre pestañas con `storage` y persistencia de emergencias sin coordenadas.
+- Nuevos: `SharingConsentService`, `HealthFollowUpService` + `HealthFollowUpComponent` (ruta `/health/follow-up` deja de usar la sección genérica), estado `ATTENDED` y botón en Care, botón «Omitir» en `MedicationCard` (salida opcional `skipped`), aviso por check-in con malestar.
+- `emergency.service.spec.ts` limpia `localStorage` al iniciar cada prueba porque el registro ahora persiste.
+- Validación: `npm run build` sin errores y 199 pruebas pasando. No se probó en navegador con dos pestañas reales; la sincronización está cubierta con un `StorageEvent` simulado.
+
+## 2026-10-01 00:40 - Claude
+
+### Objetivo
+LIA multilingüe bidireccional (es-MX + zapoteco `zaa`, piloto): Fase 1 de 6, núcleo de idiomas.
+
+### Hecho
+- Creado en `src/app/core/i18n/`:
+  - `language.models.ts`: tipos, `PENDING_VALIDATION`, intenciones canónicas;
+  - `language-variants.ts`: es-MX estable y `zaa` piloto, con licencia CC-BY-NC-4.0 y modelos;
+  - `catalogs/es-MX.json`: los 63 textos actuales de LIA, idénticos;
+  - `catalogs/zaa.json`: las mismas claves, todas `[PENDIENTE_VALIDACION_NATIVA]`, con el texto fuente y marcas de revisión clínica;
+  - `language-catalogs.ts`: token para inyectar catálogos de prueba;
+  - `language-context.service.ts`: preferencia en `vitalia.language`, interacción de sesión, detección y confianza;
+  - `phrasebook.service.ts`: plantillas con datos reales, respaldo español visible, sin inventar texto;
+  - `formatters/es-mx.formatters.ts`.
+- `lia.service.ts`: usa los formateadores de `core` y los re-exporta, sin cambio de salida.
+
+### Validaciones
+- `npm run build`: OK.
+- `npm test -- --watch=false`: 29 archivos / 199 pruebas, incluidas las de notificaciones de otra sesión. Hay 3 specs nuevas: catálogos, contexto y plantillas.
+- Durante la fase, otra sesión con cambios sin commit (notificaciones) rompió temporalmente el build y una prueba de emergencia. Ambos quedaron en verde al terminar su edición. No toqué sus archivos.
+
+### Pendientes
+- Fases 2 a 6.
+- Ninguna frase zapoteca está validada.
+
+## 2026-10-01 - Claude (Entretenimiento Senior)
+
+### Objetivo
+Dar pantalla propia y contenido funcional a las 6 tarjetas de Entretenimiento sin cambiar el diseño.
+
+### Archivos modificados
+- Nuevos: `src/app/features/senior/entertainment/` (servicios, modelos, tarjeta, marco, 6 pantallas, spec), `src/app/core/mock/entertainment/*.json`, `backend/app/api/entertainment.py`, `backend/tests/test_entertainment.py`.
+- Editados: `senior.routes.ts` (6 rutas), `core/services/senior-mock-data.ts` (campo `route` de las 6 tarjetas), `backend/app/main.py`, `backend/app/core/config.py`, `backend/requirements.txt`, `backend/.env.example`, docs.
+
+### Cambios realizados
+- Pantallas con 4–8 elementos mock, estado de carga, aviso amable ante error y tarjetas expandibles (detalles, materiales y pasos, etc.).
+- Fallback: sin clave → mock; error/timeout → mock + aviso. Endpoints FastAPI aislados de `/api/voice`.
+- «Volver» reutiliza `SeniorPageComponent[backPath]` (`navigateByUrl`).
+
+### Validaciones
+- `npm run build` OK; `npm test -- --watch=false` 247 OK; `pytest` backend 19 OK.
+
+### Pendientes
+- Obtener claves TMDB, Ticketmaster, NewsAPI y YouTube y probar los proveedores reales (solo probados con respuestas simuladas).
+- Revisión visual en 320–1440 px (el layout reutiliza grid/tokens existentes pero no se capturó en navegador).
+- Actividades no combina Ticketmaster todavía (solo catálogo local).
+
+## 2026-10-01 00:50 - Claude
+
+### Objetivo
+LIA multilingüe: Fase 2 de 6, el español pasa por la capa de idiomas sin cambios visibles.
+
+### Hecho
+- `core/services/lia-output.service.ts` (nuevo) envía cada respuesta según la variante:
+  - es-MX: `speak()` síncrono, igual que antes;
+  - zapoteco: audio pregrabado validado, luego texto visible con aviso, y voz en español solo si la persona lo permitió;
+  - `deliverSpanishNotice` para los avisos del sistema que solo existen en español.
+- `core/services/lia-speech.service.ts`: `playClip()` usa la misma cola, prioridades, watchdog (ajustado a la duración real) y bloqueo de micrófono. Libera la URL temporal y conserva el límite de volumen de la otra sesión.
+- `features/senior/services/intent-lexicon.ts` (nuevo):
+  - el léxico es-MX contiene las regex de `LiaService` y del parser, movidas tal cual;
+  - el léxico zapoteco se construye solo con frases validadas y conserva los diacríticos;
+  - las intenciones canónicas se traducen a las intenciones existentes (sin lógica paralela por idioma).
+- Ahora usan `PhrasebookService` y `LiaOutputService`:
+  - `global-voice-command.parser.ts` (opción `lexicon`, por defecto es-MX);
+  - `lia.service.ts` (`respondToIntent`, variante de la respuesta; la respuesta de Familia nombra al contacto real);
+  - `voice-command.service.ts`, `emergency.service.ts` (solo la narración), `location-page` y `lia-page`.
+- `LiaReply` incluye ahora `message` y `spoken` (`LocalizedText`). `VoiceCommandFeedback` incluye `translationPending`.
+- Cambio menor: el comando global «¿qué medicamento me toca?» responde directamente a esa intención. Antes una frase como «ya me tomé mi medicamento» podía decir «registré» sin registrar nada.
+
+### Validaciones
+- `npm run build`: OK.
+- `npm test -- --watch=false`: 33 archivos / 247 pruebas. Las existentes pasan sin cambios.
+- Specs nuevas: `intent-lexicon`, `lia-output.service`, `lia-speech-clips` y 2 casos en `lia.service`.
+
+### Pendientes
+- Fases 3 a 6.
+- Ningún texto zapoteco está validado.
+
+## 2026-10-01 12:00 - Claude
+
+### Objetivo
+LIA multilingüe: Fase 3 de 6, modo zapoteco en el frontend (sin modelos).
+
+### Hecho
+- Nuevo en `core/i18n/`:
+  - `language-detector.ts`, conservador: ≥ 3 palabras, confianza ≥ 0,85, la ñ no cuenta, sin adivinar la variante. Las señales zapotecas son la ortografía del vocabulario MMS `zaa` y las frases validadas.
+  - `testing/zaa-test-fixture.ts`, catálogo `[ZAA_TEST]` solo para pruebas.
+- Nuevo en `core/services/speech-recognition.providers.ts`:
+  - `SpanishVoskProvider`: la misma llamada de siempre.
+  - `ZapotecSpeechProvider`: experimental; solo si `/health` lo declara.
+  - `SpeechRecognitionRegistry`.
+- `voice-api.service.ts`:
+  - `health()` lee los proveedores del servidor; un servidor caído o una versión antigua cuentan como no disponible.
+  - `transcribeWith()` exige que la respuesta venga de la misma variante, para no aceptar nunca texto de Vosk como zapoteco.
+- `language-context.service.ts`: `resolveTextInput()` aplica el orden fijado → contexto → detección → respaldo. Si no puede identificar la variante, pide elegirla.
+- `phrasebook.service.ts`: `allIntentPhrases()` y `validationProgress()`. La interpolación ya no duplica el punto final.
+- `es-mx.formatters.ts`: `spokenTime()` acepta «10:00 AM», «10:00 a.m.», «10:00 a. m.» y 24 h, porque otra sesión cambió el formato visible de las horas.
+- `intent-lexicon.ts`: `languageSwitch()` reconoce «habla en español» y «en zapoteco»; el equivalente zapoteco queda pendiente.
+- `lia-page`:
+  - insignia del idioma (`StatusBadge`) y botón «Cambiar a español/zapoteco»;
+  - nota «Traducción al zapoteco pendiente de validación», indicando si se leyó en español;
+  - las preguntas sugeridas son atajos de intención y no cambian el idioma;
+  - el texto escrito pasa por la detección;
+  - la voz usa el proveedor de la variante, no graba si no está disponible y no actúa con confianza < 0,6;
+  - si no hay variante, pide elegirla con la acción «Elegir idioma».
+- `voice-command.service` y su barra:
+  - proveedor por variante; sin reconocimiento zapoteco, solo comandos en español, con aviso visible;
+  - nota de traducción pendiente.
+- Accesibilidad: panel «Idioma de VITALIA» con `senior-page__choice-grid`, `StatusBadge`, `AppButton` y `senior-page__detail-list`, sin estilos nuevos. Muestra:
+  - Español (México) / Zapoteco;
+  - Variante (Sierra de Juárez, piloto) y «Otras variantes: próximamente»;
+  - textos validados (0 de 68);
+  - respaldo en español (apagado por defecto);
+  - estado de la voz y del reconocimiento zapotecos;
+  - licencia CC-BY-NC-4.0.
+- `public/audio/zapoteco/zaa/README.md`: cómo agregar grabaciones validadas. La carpeta queda vacía.
+- Catálogos con 5 claves nuevas, 68 en total.
+
+### Validaciones
+- `npm run build`: OK.
+- `npm test -- --watch=false`: 281 de 287. Fallan solo 6 pruebas de `entertainment.spec.ts`, trabajo en curso de otra sesión.
+- Nuevas specs:
+  - detector;
+  - `resolveTextInput`;
+  - proveedores y `VoiceApiService` por variante;
+  - simetría lingüística: es→es, zaa→zaa, pendiente sin voz en español sin permiso, emergencia zaa con GPS y registro, llamada, ubicación, medicamento, continuidad y cambio explícito;
+  - idioma en la página de LIA;
+  - panel de Accesibilidad.
+- Mis specs limpian `localStorage`, porque la base simulada de la otra sesión persiste entre pruebas.
+
+### Pendientes
+- Fases 4 a 6.
+- Ningún texto zapoteco está validado.
+
+## 2026-10-01 - LIA multilingüe, Fase 4 (redefinida): comandos predeterminados en español, náhuatl piloto y zapoteco piloto
+
+### Objetivo
+- Dejar funcionando, con los mocks, tres comandos en tres idiomas: próximo medicamento, pedir ayuda y llamar a la hija.
+- Sin ASR nativo, sin TTS nativo y sin cambiar el diseño.
+
+### Cambios
+- `core/i18n/lia-multilingual-intents.ts` (nuevo) es el catálogo central.
+  - Contiene `canonicalInput`, `aliases`, `responseTemplate`, `confirmationTemplate` y `voskVariants` para cada intención.
+  - Las frases náhuatl y zapotecas son las entregadas por el equipo, sin cambios; las zapotecas conservan el saltillo ʼ (U+02BC).
+  - Las `voskVariants` se calibraron con voz sintética es-MX contra `vosk-model-es-0.42`.
+- `normalize-voice-phrase.ts` y `multilingual-voice-intent-matcher.ts` (nuevos): normalizan y puntúan las frases, con umbral por intención (HELP ≥ 0,9). `evaluateIntent()` es una función pura que comparten el servicio y el léxico por defecto.
+- Capa de idiomas:
+  - `language.models.ts` y `language-variants.ts` reescritos: `'es' | 'nahuatl-pilot' | 'zapoteco-pilot'`.
+  - `language-context.service.ts` reescrito: `liaLanguage`, guardado en `vitalia.lia-language`.
+  - `phrasebook.service.ts` reescrito: claves `intent.X.response|confirmation` con respaldo en español; dosis y hora se formatean por idioma.
+  - `language-detector.ts`: detecta las frases piloto por el matcher.
+  - Se eliminaron `catalogs/zaa.json` y `testing/zaa-test-fixture.ts`; `es-MX.json` quedó con 57 claves.
+- Servicios:
+  - `speech-recognition.providers.ts`: Vosk para todos; en los pilotos, `vosk-fallback` experimental.
+  - `voice-api.service.ts` volvió a la versión de HEAD.
+  - `voice-debug-log.service.ts` (nuevo): registro solo en desarrollo.
+  - `lia-output.service.ts`: los pilotos se muestran solo en texto; `PilotTtsProvider` queda tras `LIA_EXPERIMENTAL_TTS_ENABLED`, apagado por defecto.
+- `intent-lexicon.ts`:
+  - nueva intención `CALL_DAUGHTER` en LIA;
+  - léxico por idioma (regex en español + catálogo) y `chainFor()`, que prueba primero el piloto y después el español;
+  - `SPANISH_LEXICON` por defecto, para que `parseGlobalVoiceCommand(texto)` siga funcionando sin opciones;
+  - `ES_MX_LEXICON` sustituido.
+- `lia.service.ts`:
+  - `resolve()` devuelve intención, idioma y confianza;
+  - las respuestas de las tres intenciones salen del catálogo con datos reales;
+  - un piloto sin coincidencia recibe «No pude reconocer ese comando…», sin acción.
+- `voice-command.service.ts`:
+  - analiza con la cadena de léxicos y registra cada frase en el registro de desarrollo;
+  - HELP usa la respuesta del catálogo y la cuenta regresiva de siempre;
+  - la hija tiene respuesta y confirmación propias;
+  - nueva pregunta `MEDICATION`, de 30 s, sin diálogo: «sí» solo explica que hay que pulsar «Ya la tomé»;
+  - aviso fijo de reconocimiento experimental en los pilotos.
+- `lia-page`:
+  - el idioma piloto se indica como «respuestas en texto»;
+  - el botón alterna entre el español y el idioma elegido;
+  - la nota distingue el respaldo en español de la frase piloto sin validación nativa;
+  - «Llamar a Ana» abre `CallContactDialogComponent`;
+  - sin bloqueo por falta de ASR.
+- Accesibilidad: selector Español / Náhuatl (piloto) / Zapoteco (piloto) con la clase `senior-page__choice-grid` existente, notas de límites y respaldo en español. Se retiraron el estado MMS y la licencia.
+- `public/audio/README.md` sustituye a `public/audio/zapoteco/zaa/README.md`.
+
+### Validaciones
+- Specs nuevas o reescritas:
+  - catálogo;
+  - normalizador;
+  - matcher: frases canónicas, saltillos, `voskVariants`, HELP con baja confianza;
+  - contexto (persistencia);
+  - phrasebook: datos dinámicos y respaldo;
+  - salida: sin voz española en pilotos, y flag experimental;
+  - proveedores, léxico y simetría: los mismos servicios en los tres idiomas;
+  - idioma en la página de LIA;
+  - Accesibilidad.
+- Se ajustaron las specs existentes de LIA y de comandos de voz a los textos en español que pidió el usuario: respuestas de medicamento, ayuda y hija.
+- `npm run build`: OK. Antes falló por `signature-page.component.ts`, trabajo de otra sesión: `metrics` había pasado a ser una señal y la plantilla no la llamaba. Se corrigió con un solo cambio: `metrics` → `metrics()`.
+- `npm test -- --watch=false`: 354 de 354.
+- No hubo cambios en el backend, así que no se ejecutó pytest.
+
+### Pendientes
+- Validación nativa de todas las frases piloto. Observaciones a revisar:
+  - el zapoteco parece del Istmo y no de la Sierra de Juárez;
+  - «abrir el marcador» se tradujo como «papel» (amatl) y «archivo» (archivu);
+  - en náhuatl se mezclan ortografías.
+- Faltan las confirmaciones en náhuatl y zapoteco (hoy en español con aviso), el «sí» y el «cancelar» piloto, y la voz nativa o los audios validados.
+- El reconocimiento por voz en los pilotos depende de cómo Vosk español deforma la frase: hay que calibrarlo con hablantes reales.
+
+## 2026-10-01 - Integración AsistenteVitaliaOffline (Desktop Voice Client) y Roadmap Náhuatl OpenSLR 148
+
+### Objetivo
+Integrar el cliente de voz offline `AsistenteVitaliaOffline` (Vosk + PyAudio + pyttsx3) sin romper el proyecto existente, con tolerancia de rutas, compatibilidad Kaldi en Windows y hoja de ruta para soporte nativo de Náhuatl mediante fine-tuning acústico OpenSLR 148.
+
+### Cambios realizados
+- `prueba.py` (raíz): Actualizado con la implementación completa de `AsistenteVitaliaOffline`. Incorpora resolución inteligente de rutas para el modelo Vosk (detecta automáticamente `backend/models/vosk-model-es-0.42` o carpetas alternativas) y adaptación de rutas para Kaldi en Windows ante nombres de directorio con acentos (`Vitalía`).
+- `backend/scripts/asistente_offline.py`: Sincronizado como módulo oficial del backend con las respuestas contextuales para Salud (medicamento para la presión a las 2 PM, cita en Tehuacán a las 10 AM), Trámites (recibo de luz), Accesibilidad Náhuatl y Wake Word («Vitalia» / «Italia»).
+- Documentada la estrategia de evolución futura para STT nativo en Náhuatl: sustitución de Vosk en `escuchar_peticion()` por `faster-whisper` local con fine-tuning sobre el corpus acústico OpenSLR 148 (Náhuatl de Puebla).
+- Actualizado `docs/STATUS.md`.
+
+### Validaciones
+- Backend tests: `pytest` ejecutado con el entorno virtual (`.venv\Scripts\pytest.exe`), 19 pruebas pasando y 1 omitida (sin regresiones).
+- Compilación de Python: `py_compile` en `prueba.py` y `backend/scripts/asistente_offline.py` exitoso (cero errores de sintaxis).
+- Frontend build: `npm run build` exitoso (cero errores de TypeScript/routing).
+- Frontend tests: `npm test -- --watch=false`, 40 suites / 354 pruebas pasando limpiamente.

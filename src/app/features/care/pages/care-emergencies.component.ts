@@ -21,13 +21,15 @@ import { StatusBadgeComponent } from '../../../shared/ui/status-badge/status-bad
           <div class="event__head">
             <span class="event__icon" aria-hidden="true"><app-vitalia-icon name="emergency" [size]="24" /></span>
             <div><h2>{{ event.seniorName }} · {{ typeLabels[event.type] }}</h2><p>{{ event.reason }} · {{ time(event) }}</p></div>
-            <app-status-badge variant="emergency">Registrada</app-status-badge>
+            <app-status-badge [variant]="event.status === 'RESOLVED' ? 'success' : event.status === 'CANCELLED' ? 'attention' : 'emergency'">{{ statusLabel(event.status) }}</app-status-badge>
           </div>
           <dl class="event__details">
             <div><dt>Origen</dt><dd>{{ sourceLabels[event.source] }}</dd></div>
             <div><dt>Contacto avisado</dt><dd>{{ event.contactName ? event.contactName + ' (' + event.contactRelationship + ') · simulado' : 'Sin contacto' }}</dd></div>
             <div><dt>Ubicación</dt><dd>{{ locationLabel(event) }}</dd></div>
           </dl>
+          @if (event.status === 'ACTIVE') { <app-button icon="check" (pressed)="registry.markAttended(event.id)">Atender emergencia</app-button> }
+          @if (event.status === 'ATTENDED') { <app-button icon="check" (pressed)="registry.markResolved(event.id)">Resolver emergencia</app-button> }
           @if (event.latitude !== undefined) { <app-button variant="secondary" icon="map-pin" (pressed)="go('/care/location')">Ver ubicación autorizada</app-button> }
         </article>
       } @empty {
@@ -53,14 +55,16 @@ import { StatusBadgeComponent } from '../../../shared/ui/status-badge/status-bad
 })
 export class CareEmergenciesComponent {
   private readonly router = inject(Router);
-  protected readonly events = inject(EmergencyRegistryService).events;
+  protected readonly registry = inject(EmergencyRegistryService);
+  protected readonly events = this.registry.events;
   protected readonly typeLabels = EMERGENCY_TYPE_LABELS;
   protected readonly sourceLabels = EMERGENCY_SOURCE_LABELS;
   protected time(event: EmergencyEventRecord): string { return new Date(event.createdAt).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }); }
   protected locationLabel(event: EmergencyEventRecord): string {
-    if (event.latitude === undefined) return 'No se compartió';
+    if (event.latitude === undefined) return event.locationSource ? 'Compartida desde el dispositivo de origen' : 'No se compartió';
     const accuracy = event.accuracy ? ` · ± ${Math.round(event.accuracy)} m` : '';
     return `${event.locationSource === 'REAL' ? 'GPS real' : 'Ubicación de demostración'}${accuracy}`;
   }
+  protected statusLabel(status: EmergencyEventRecord['status']): string { return { ACTIVE: 'Activa', ATTENDED: 'Atendida', RESOLVED: 'Resuelta', CANCELLED: 'Cancelada' }[status]; }
   protected go(path: string): void { void this.router.navigateByUrl(path); }
 }

@@ -2,21 +2,29 @@ import { DOCUMENT } from '@angular/common';
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { LanguageContextService } from '../../../core/i18n/language-context.service';
+import { LocalizedText, PhraseKey, VariantId } from '../../../core/i18n/language.models';
+import { loosePhrase, normalizeVoicePhrase } from '../../../core/i18n/normalize-voice-phrase';
+import { intentKey, PhraseParams, PhrasebookService } from '../../../core/i18n/phrasebook.service';
 import { AudioRecording } from '../../../core/models/permission.models';
 import { AudioCaptureService } from '../../../core/services/audio-capture.service';
+import { LiaOutputService } from '../../../core/services/lia-output.service';
 import { LiaSpeechPriority, LiaSpeechService } from '../../../core/services/lia-speech.service';
 import { PermissionsService } from '../../../core/services/permissions.service';
-import { VoiceApiService } from '../../../core/services/voice-api.service';
+import { SpeechRecognitionRegistry } from '../../../core/services/speech-recognition.providers';
+import { VoiceDebugLogService } from '../../../core/services/voice-debug-log.service';
 import { VoicePauseReason, VoiceSessionCoordinatorService } from '../../../core/services/voice-session-coordinator.service';
 import { SeniorContact } from '../models/senior.models';
 import { ContactsService } from './contacts.service';
 import { EmergencyRequest, EmergencyService } from './emergency.service';
 import { GlobalVoiceCommand, parseGlobalVoiceCommand } from './global-voice-command.parser';
+import { IntentLexiconService } from './intent-lexicon';
 import { LiaService } from './lia.service';
 
-export type VoiceCommandState = 'off' | 'starting' | 'listening' | 'processing' | 'paused-lia' | 'paused-speech' | 'paused-hidden' | 'error';
+export type VoiceCommandState = 'off' | 'starting' | 'wake-listening' | 'command-listening' | 'processing' | 'speaking' | 'paused-lia' | 'paused-speech' | 'paused-hidden' | 'error';
 
-export type VoiceCommandPrompt = { kind: 'SICK' } | { kind: 'CALL'; contact: SeniorContact };
+/** Pregunta pendiente de un "sí"/"cancelar". MEDICATION: "¿Quieres que marque la toma...?" (sin diálogo). */
+export type VoiceCommandPrompt = { kind: 'SICK' } | { kind: 'CALL'; contact: SeniorContact } | { kind: 'MEDICATION' };
 
 export interface VoiceCommandFeedback {
   /** Lo que se escucho (solo frases dirigidas a VITALIA). */
@@ -24,36 +32,52 @@ export interface VoiceCommandFeedback {
   message: string;
   tone: 'info' | 'success' | 'warning';
   action?: { label: string; route: string };
+  /** El mensaje se muestra en espanol porque la lengua de la conversacion no tiene esa frase. */
+  translationPending?: boolean;
+  /** Frase predeterminada de un idioma piloto (sin validacion nativa). */
+  pilotText?: boolean;
 }
 
 const FEEDBACK_MS = 9000;
+/** La pregunta "¿Quieres que marque la toma...?" deja de esperar respuesta pasado este tiempo. */
+const MEDICATION_PROMPT_MS = 30000;
+const PILOT_RECOGNITION_NOTICE = 'Reconocimiento experimental: tu voz se aproxima con Vosk en español. Si no te entiendo, usa español o los botones.';
 const MAX_QUEUE = 2;
-const CANCELLED_SPEECH = 'Está bien. He cancelado la acción.';
-const HELP_STARTING_SPEECH = 'De acuerdo. Voy a iniciar la solicitud de ayuda.';
+const WAKE_WORD = /\bhola\s+lia\b/;
 const firstName = (contact: SeniorContact) => contact.name.split(/\s+/)[0];
 
 /**
  * Comandos globales de voz ("LIA, ..."). Solo escuchan mientras la persona los tiene activos y la pestana esta visible,
  * comparten microfono (coordinador) y Vosk con LIA, y terminan en los servicios existentes: emergencia, contactos,
  * ubicacion y LIA. Nunca guardan audio ni transcripciones; lo que no empieza con "LIA" se descarta sin mostrarse.
- * Cada respuesta se muestra y, si la voz de LIA esta activa, tambien se dice; mientras LIA habla la escucha se pausa.
- * Las frases habladas nunca contienen "LIA" ni terminan en "si"/"cancelar", para que un eco no dispare un comando.
+ * Cada respuesta se muestra y, si la voz de LIA esta activa, tambien se dice, en la lengua en que llego el comando;
+ * mientras LIA habla la escucha se pausa. Las frases habladas nunca contienen "LIA" ni terminan en "si"/"cancelar",
+ * para que un eco no dispare un comando.
  */
 @Injectable({ providedIn: 'root' })
 export class VoiceCommandService {
   private readonly audio = inject(AudioCaptureService);
-  private readonly voiceApi = inject(VoiceApiService);
   private readonly coordinator = inject(VoiceSessionCoordinatorService);
   private readonly permissions = inject(PermissionsService);
   private readonly emergency = inject(EmergencyService);
   private readonly contacts = inject(ContactsService);
   private readonly lia = inject(LiaService);
+  private readonly output = inject(LiaOutputService);
+  private readonly phrases = inject(PhrasebookService);
+  private readonly lexicons = inject(IntentLexiconService);
+  private readonly language = inject(LanguageContextService);
+  private readonly recognition = inject(SpeechRecognitionRegistry);
+  private readonly debug = inject(VoiceDebugLogService);
   private readonly speech = inject(LiaSpeechService);
   private readonly router = inject(Router);
   private readonly document = inject(DOCUMENT);
   private queue: AudioRecording[] = [];
   private draining = false;
   private feedbackTimer?: ReturnType<typeof setTimeout>;
+  private promptTimer?: ReturnType<typeof setTimeout>;
+  private lastSpeechDone: Promise<boolean> = Promise.resolve(false);
+  /** Lengua del comando que se esta atendiendo: la respuesta sale en la misma. */
+  private variant: VariantId = this.language.interactionVariant();
 
   readonly state = signal<VoiceCommandState>('off');
   readonly enabled = computed(() => this.state() !== 'off');
@@ -62,6 +86,8 @@ export class VoiceCommandService {
   readonly feedback = signal<VoiceCommandFeedback | null>(null);
   readonly errorMessage = signal('');
   readonly hearingSpeech = this.audio.hearingSpeech;
+  /** Aviso visible: en los idiomas piloto no hay ASR nativo y la voz se aproxima con Vosk en espanol. */
+  readonly languageNotice = computed(() => (this.language.interactionVariant() === 'es' ? '' : PILOT_RECOGNITION_NOTICE));
 
   constructor() {
     this.coordinator.registerGlobal({ pause: (reason) => this.pause(reason), resume: () => void this.resumeListening() });
@@ -87,12 +113,16 @@ export class VoiceCommandService {
   /** Paso 2: consentimiento aceptado. */
   async acceptConsent(): Promise<void> {
     this.consentOpen.set(false);
+    // Precalienta el motor TTS del navegador con un gesto de usuario activo para que la primera
+    // respuesta hablada de LIA no quede silenciada por la política de autoplay de Chrome/Edge.
+    this.speech.prime();
     await this.startListening();
   }
 
   declineConsent(): void { this.consentOpen.set(false); }
 
   disable(): void {
+    clearTimeout(this.promptTimer);
     this.audio.stopContinuous();
     this.coordinator.releaseGlobal();
     this.queue = [];
@@ -100,11 +130,22 @@ export class VoiceCommandService {
     this.state.set('off');
   }
 
-  /** Procesa una frase ya transcrita (usado por la cola y por las pruebas). */
-  async handleTranscript(text: string): Promise<void> {
+  private logLifecycle(message: string): void { this.debug.lifecycle(message); }
+
+  /** Procesa una frase ya transcrita (usado por la cola y por las pruebas) en la lengua indicada. */
+  async handleTranscript(text: string, variant: VariantId = this.language.interactionVariant()): Promise<void> {
     const awaitingAnswer = !!this.prompt() || this.emergency.awaitingAnswer();
-    const command = parseGlobalVoiceCommand(text, { awaitingAnswer });
+    const command = parseGlobalVoiceCommand(text, { awaitingAnswer, lexicons: this.lexicons.chainFor(variant) });
+    this.debug.log({
+      language: variant,
+      heard: text,
+      normalized: normalizeVoicePhrase(text),
+      candidate: command?.intent ?? null,
+      confidence: command?.confidence ?? null,
+      action: !command ? 'descartada (sin LIA)' : command.intent === 'UNKNOWN' ? 'ninguna' : command.intent,
+    });
     if (!command) return;
+    this.variant = command.variant;
     await this.execute(command, text.trim());
   }
 
@@ -118,49 +159,47 @@ export class VoiceCommandService {
 
   /** La persona pulso "Llamar a ...": el enlace `tel:` abre el marcador; VITALIA nunca marca por su cuenta. */
   announceCall(contact: SeniorContact): void {
-    this.speak(`De acuerdo. Voy a abrir el marcador para llamar a ${firstName(contact)}.`, 'HIGH');
+    this.speak(this.line('voice.call.opening', { firstName: firstName(contact) }), 'HIGH');
   }
 
   private async execute(command: GlobalVoiceCommand, heard: string): Promise<void> {
     switch (command.intent) {
       case 'EMERGENCY_HELP':
-        this.startEmergency({ type: 'HELP', reason: 'Necesito ayuda', source: 'GLOBAL_VOICE' }, true, heard,
-          'Sí, te escuché. Voy a ayudarte. Si no lo necesitas, puedes cancelar la solicitud.');
+        // Solo llega aqui con confianza alta (umbral estricto de HELP); la cuenta regresiva se puede cancelar.
+        this.startEmergency({ type: 'HELP', reason: 'Necesito ayuda', source: 'GLOBAL_VOICE' }, true, heard, intentKey('HELP', 'response'));
         return;
       case 'EMERGENCY_FALL':
         // La cuenta regresiva avanza sola: si la persona no puede responder, la ayuda se solicita igualmente.
-        this.startEmergency({ type: 'FALL', reason: 'Me caí', source: 'GLOBAL_VOICE' }, true, heard,
-          'Te escuché. Entiendo que te has caído. ¿Quieres activar la emergencia? Si no respondes, la activaré en unos segundos.');
+        this.startEmergency({ type: 'FALL', reason: 'Me caí', source: 'GLOBAL_VOICE' }, true, heard, 'voice.fall.speech');
         return;
       case 'EMERGENCY_SICK':
-        if (this.emergency.inProgress()) { this.reply(heard, 'Ya hay una solicitud de ayuda en curso.', 'info', 'CRITICAL'); return; }
+        if (this.emergency.inProgress()) { this.reply(heard, this.line('voice.emergencyInProgress'), 'info', 'CRITICAL'); return; }
         this.prompt.set({ kind: 'SICK' });
-        this.say({ heard, message: 'He entendido que te sientes mal.', tone: 'warning' });
-        this.speak('Sí, te escuché. Entiendo que te sientes mal. ¿Quieres que pida ayuda?', 'CRITICAL');
+        this.show(heard, this.line('voice.sick.feedback'), 'warning');
+        this.speak(this.line('voice.sick.speech'), 'CRITICAL');
         return;
       case 'CALL_DAUGHTER':
-        this.prepareCall(this.contacts.findByRelationship('hija'), 'No encontré a tu hija entre tus contactos autorizados.', heard,
-          (contact) => `Encontré a ${contact.name}. ¿Quieres llamarla?`);
+        this.prepareCall(this.contacts.findByRelationship('hija'), 'voice.daughter.missing', heard, intentKey('CALL_DAUGHTER', 'response'));
         return;
       case 'CALL_PRIMARY_CONTACT':
-        this.prepareCall(this.contacts.primaryEmergencyContact(), 'Aún no tienes un contacto de emergencia.', heard,
-          (contact) => `Encontré a tu contacto principal de emergencia, ${contact.name}. ¿Quieres llamarle?`);
+        this.prepareCall(this.contacts.primaryEmergencyContact(), 'voice.primary.missing', heard, 'voice.primary.found');
         return;
       case 'OPEN_EMERGENCY':
         void this.router.navigateByUrl('/senior/emergency');
-        this.say({ heard, message: 'Abrí la pantalla de emergencia.', tone: 'info' });
-        this.speak('Sí, te escuché. Abrí la pantalla de emergencia.', 'NORMAL');
+        this.show(heard, this.line('voice.emergencyOpened.feedback'), 'info');
+        this.speak(this.line('voice.emergencyOpened.speech'), 'NORMAL');
         return;
       case 'OPEN_LOCATION':
         // Es la persona quien pide su ubicacion: la pantalla la solicita (con consentimiento si hace falta) y dice el resultado.
         void this.router.navigate(['/senior/location'], { queryParams: { solicitar: Date.now() } });
-        this.say({ heard, message: 'Voy a mostrar dónde estás.', tone: 'info' });
-        this.speak('Sí, te escuché. Estoy buscando tu ubicación.', 'HIGH');
+        this.show(heard, this.line('voice.location.feedback'), 'info');
+        this.speak(this.line('voice.location.speech'), 'HIGH');
         return;
       case 'NEXT_MEDICATION': {
-        const reply = await firstValueFrom(this.lia.respond(command.command || 'qué medicamento me toca'));
-        this.say({ heard, message: reply.text, tone: 'info', action: { label: 'Ver medicamentos', route: '/senior/medications' } });
-        this.speak(reply.speech ?? reply.text, 'NORMAL');
+        const reply = await firstValueFrom(this.lia.respondToIntent('NEXT_MEDICATION', this.variant));
+        this.show(heard, reply.message, 'info', { label: 'Ver medicamentos', route: '/senior/medications' });
+        this.speak(reply.spoken ?? reply.message, 'NORMAL');
+        if (reply.message.key === intentKey('NEXT_MEDICATION', 'response')) this.askMedication();
         return;
       }
       case 'CONFIRM':
@@ -170,24 +209,41 @@ export class VoiceCommandService {
         this.cancelByVoice(heard);
         return;
       default:
-        this.say({ heard, message: 'No entendí la instrucción. Puedes decir: «LIA, necesito ayuda», «LIA, llama a mi hija» o «LIA, ¿dónde estoy?».', tone: 'warning' });
-        this.speak('No entendí la instrucción. Puedes pedirme ayuda, llamar a tu hija o preguntarme dónde estás.', 'LOW');
+        // Idioma piloto sin coincidencia segura: aviso en espanol (respaldo marcado) y ninguna accion.
+        if (this.variant !== 'es') { this.reply(heard, this.line('voice.pilotNotRecognized'), 'warning', 'LOW'); return; }
+        this.show(heard, this.line('voice.unknown.feedback'), 'warning');
+        this.speak(this.line('voice.unknown.speech'), 'LOW');
     }
   }
 
-  private startEmergency(request: EmergencyRequest, countdown: boolean, heard?: string, speech = HELP_STARTING_SPEECH): void {
+  private startEmergency(request: EmergencyRequest, countdown: boolean, heard?: string, speech: PhraseKey = intentKey('HELP', 'confirmation')): void {
     const started = countdown ? this.emergency.startVoiceRequest(request) : this.emergency.confirmRequest(request);
-    if (!started) { this.reply(heard, 'Ya hay una solicitud de ayuda en curso.', 'info', 'CRITICAL'); return; }
+    if (!started) { this.reply(heard, this.line('voice.emergencyInProgress'), 'info', 'CRITICAL'); return; }
     void this.router.navigateByUrl('/senior/emergency');
-    this.say({ heard, message: countdown ? 'Voy a iniciar la solicitud de ayuda. Puedes cancelar.' : 'Estoy preparando tu solicitud de ayuda.', tone: 'warning' });
-    this.speak(speech, 'CRITICAL');
+    this.show(heard, this.line(countdown ? 'voice.emergencyStarting.countdown' : 'voice.emergencyStarting.confirmed'), 'warning');
+    this.speak(this.line(speech), 'CRITICAL');
   }
 
-  private prepareCall(contact: SeniorContact | null, missing: string, heard: string, question: (contact: SeniorContact) => string): void {
-    if (!contact) { this.reply(heard, missing, 'warning', 'HIGH'); return; }
-    this.prompt.set({ kind: 'CALL', contact });
-    this.say({ heard, message: `Prepararé una llamada para ${contact.name}.`, tone: 'info' });
-    this.speak(question(contact), 'HIGH');
+  private prepareCall(contact: SeniorContact | null, missing: PhraseKey, heard: string, question: PhraseKey): void {
+    if (!contact) { this.reply(heard, this.line(missing), 'warning', 'HIGH'); return; }
+    this.setPrompt({ kind: 'CALL', contact });
+    // La hija tiene respuesta propia en cada idioma ("Encontre a {contactName}..."): se muestra y se dice esa.
+    const daughter = question === intentKey('CALL_DAUGHTER', 'response');
+    const params = { contact: contact.name, contactName: contact.name };
+    this.show(heard, this.line(daughter ? question : 'voice.call.prepared', params), 'info');
+    this.speak(this.line(question, params), 'HIGH');
+  }
+
+  /** "¿Quieres que marque la toma como realizada cuando lo tomes?": espera un "si" un rato, sin dialogo. */
+  private askMedication(): void {
+    const prompt: VoiceCommandPrompt = { kind: 'MEDICATION' };
+    this.setPrompt(prompt);
+    this.promptTimer = setTimeout(() => { if (this.prompt() === prompt) this.prompt.set(null); }, MEDICATION_PROMPT_MS);
+  }
+
+  private setPrompt(prompt: VoiceCommandPrompt): void {
+    clearTimeout(this.promptTimer);
+    this.prompt.set(prompt);
   }
 
   private confirmByVoice(heard: string): void {
@@ -196,34 +252,42 @@ export class VoiceCommandService {
     if (prompt?.kind === 'CALL') {
       // Nunca se marca por voz: solo el boton abre el marcador.
       const name = firstName(prompt.contact);
-      this.say({ heard, message: `Pulsa «Llamar a ${name}» para abrir el marcador.`, tone: 'info' });
-      this.speak(`De acuerdo. Para abrir el marcador, pulsa Llamar a ${name}.`, 'HIGH');
+      const daughter = prompt.contact.id === this.contacts.findByRelationship('hija')?.id;
+      this.show(heard, this.line('voice.call.press.feedback', { firstName: name }), 'info');
+      this.speak(this.line(daughter ? intentKey('CALL_DAUGHTER', 'confirmation') : 'voice.call.press.speech', { firstName: name }), 'HIGH');
       return;
     }
-    if (this.emergency.consentOpen()) { this.speak('De acuerdo.', 'CRITICAL'); void this.emergency.acceptLocationConsent(); return; }
+    if (prompt?.kind === 'MEDICATION') {
+      // La toma solo se registra con el boton "Ya la tome" de Medicamentos.
+      this.prompt.set(null);
+      this.reply(heard, this.line(intentKey('NEXT_MEDICATION', 'confirmation')), 'info', 'NORMAL');
+      return;
+    }
+    if (this.emergency.consentOpen()) { this.speak(this.line('voice.confirm.ok'), 'CRITICAL'); void this.emergency.acceptLocationConsent(); return; }
     // "Sí" durante la cuenta regresiva por voz adelanta la solicitud (LIA lo pregunta, p. ej., tras "Me caí").
     const voiceCountdown = this.emergency.step() === 'countdown' && this.emergency.autoConfirm();
-    if (this.emergency.step() === 'confirmed' || voiceCountdown) { this.speak(HELP_STARTING_SPEECH, 'CRITICAL'); void this.emergency.confirm(); }
+    if (this.emergency.step() === 'confirmed' || voiceCountdown) { this.speak(this.line(intentKey('HELP', 'confirmation')), 'CRITICAL'); void this.emergency.confirm(); }
   }
 
   private cancelByVoice(heard: string): void {
     if (this.prompt()) {
       this.prompt.set(null);
-      this.say({ heard, message: 'De acuerdo, lo cancelé.', tone: 'info' });
-      this.speak(CANCELLED_SPEECH, 'HIGH', true);
+      this.show(heard, this.line('voice.cancel.prompt'), 'info');
+      this.speak(this.line('voice.cancel.speech'), 'HIGH', true);
       return;
     }
     if (this.emergency.consentOpen()) { this.emergency.declineLocationConsent(); return; }
     if (this.emergency.awaitingAnswer()) {
       this.emergency.cancel();
-      this.say({ heard, message: 'Cancelé la solicitud de ayuda.', tone: 'success' });
-      this.speak(CANCELLED_SPEECH, 'CRITICAL', true);
+      this.show(heard, this.line('voice.cancel.emergency'), 'success');
+      this.speak(this.line('voice.cancel.speech'), 'CRITICAL', true);
       return;
     }
-    this.reply(heard, 'No hay nada que cancelar.', 'info', 'LOW');
+    this.reply(heard, this.line('voice.cancel.nothing'), 'info', 'LOW');
   }
 
   private async startListening(): Promise<void> {
+    if (this.state() === 'wake-listening' || this.state() === 'command-listening' || this.state() === 'processing') return;
     if (!this.coordinator.requestGlobal()) { this.state.set(this.coordinator.owner() === 'LIA' ? 'paused-lia' : 'paused-speech'); return; }
     this.state.set('starting');
     const started = await this.audio.startContinuous((recording) => this.enqueue(recording));
@@ -235,17 +299,22 @@ export class VoiceCommandService {
       this.fail(this.audio.errorMessage() || 'No pude activar los comandos de voz.');
       return;
     }
-    this.state.set('listening');
+    this.state.set('wake-listening');
+    this.logLifecycle('👂 Wake word listener activo');
+    this.logLifecycle('💤 Esperando "Hola LIA"');
   }
 
   private pause(reason: VoicePauseReason): void {
     if (!this.enabled()) return;
     this.audio.stopContinuous();
-    this.state.set(reason === 'LIA' ? 'paused-lia' : 'paused-speech');
+    this.state.set(reason === 'LIA' ? 'paused-lia' : 'speaking');
   }
 
   private async resumeListening(): Promise<void> {
-    if (this.state() === 'paused-lia' || this.state() === 'paused-speech') await this.startListening();
+    if (this.state() === 'paused-lia' || this.state() === 'paused-speech' || this.state() === 'speaking') {
+      this.logLifecycle('💤 Regresando a espera de "Hola LIA"');
+      await this.startListening();
+    }
   }
 
   private async onVisibilityChange(): Promise<void> {
@@ -272,13 +341,28 @@ export class VoiceCommandService {
     try {
       while (this.queue.length && this.enabled()) {
         const recording = this.queue.shift()!;
-        if (this.state() === 'listening') this.state.set('processing');
         try {
-          await this.handleTranscript(await this.voiceApi.transcribe(recording));
+          const result = await this.recognition.forVariant(this.language.interactionVariant()).transcribe(recording);
+          if (this.state() === 'wake-listening') {
+            if (!this.isWakeWord(result.text)) continue;
+            this.state.set('command-listening');
+            this.logLifecycle('✅ Wake word detectada');
+            this.logLifecycle('🎙️ Cambiando a escucha de comando');
+            continue;
+          }
+          if (this.state() !== 'command-listening') continue;
+          this.state.set('processing');
+          this.lastSpeechDone = Promise.resolve(false);
+          await this.handleTranscript(result.text, result.variant);
+          await this.lastSpeechDone;
+          if (this.state() === 'processing' || (this.state() === 'speaking' && !this.coordinator.speaking())) this.returnToWakeListening();
         } catch {
-          this.say({ message: 'No pude procesar tu voz. Puedes seguir usando la pantalla.', tone: 'warning' });
+          if (this.state() === 'processing') {
+            this.show(undefined, this.line('voice.processingError'), 'warning');
+            this.returnToWakeListening();
+          }
         } finally {
-          if (this.state() === 'processing') this.state.set('listening');
+          // Si LIA habla, el coordinador conserva el estado speaking y reanuda al terminar el TTS.
         }
       }
     } finally {
@@ -286,14 +370,44 @@ export class VoiceCommandService {
     }
   }
 
+  private isWakeWord(text: string): boolean { return WAKE_WORD.test(loosePhrase(text)); }
+
+  private returnToWakeListening(): void {
+    if (!this.enabled() || (this.state() !== 'processing' && this.state() !== 'speaking')) return;
+    this.state.set('wake-listening');
+    this.logLifecycle('💤 Regresando a espera de "Hola LIA"');
+  }
+
+  /** Texto de la plantilla en la lengua del comando en curso. */
+  private line(key: PhraseKey, params?: PhraseParams): LocalizedText {
+    return this.phrases.t(key, params, this.variant);
+  }
+
   /** Mismo mensaje en pantalla y en voz. */
-  private reply(heard: string | undefined, message: string, tone: VoiceCommandFeedback['tone'], priority: LiaSpeechPriority): void {
-    this.say({ heard, message, tone });
+  private reply(heard: string | undefined, message: LocalizedText, tone: VoiceCommandFeedback['tone'], priority: LiaSpeechPriority): void {
+    this.show(heard, message, tone);
     this.speak(message, priority);
   }
 
-  private speak(text: string, priority: LiaSpeechPriority, interrupt = false): void {
-    void this.speech.speak(text, { priority, interrupt });
+  private speak(message: LocalizedText, priority: LiaSpeechPriority, interrupt = false): void {
+    const report = this.output.deliver(message, { priority, interrupt });
+    this.lastSpeechDone = report.done;
+    if (this.enabled() && (this.state() === 'processing' || this.state() === 'command-listening')) {
+      this.state.set('speaking');
+      this.logLifecycle('🔊 LIA respondiendo');
+    }
+  }
+
+  /** Muestra el mensaje en su lengua o, si falta la frase, en espanol con aviso visible. */
+  private show(heard: string | undefined, message: LocalizedText, tone: VoiceCommandFeedback['tone'], action?: VoiceCommandFeedback['action']): void {
+    this.say({
+      heard,
+      message: message.text,
+      tone,
+      ...(action ? { action } : {}),
+      ...(!message.available ? { translationPending: true } : {}),
+      ...(message.available && message.variant !== 'es' ? { pilotText: true } : {}),
+    });
   }
 
   private say(feedback: VoiceCommandFeedback): void {

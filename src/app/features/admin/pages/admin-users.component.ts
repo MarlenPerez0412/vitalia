@@ -15,7 +15,7 @@ import { AdminDirectoryService } from '../services/admin-directory.service';
   selector: 'app-admin-users',
   template: `
     <section class="page">
-      <app-page-header eyebrow="Administración" title="Usuarios" description="Alta, consulta, edición y activación de cuentas. Modo demostración: los cambios viven en memoria." />
+      <app-page-header eyebrow="Administración" title="Usuarios" description="Alta, consulta, edición y activación de cuentas. Los cambios de demostración se conservan en este dispositivo." />
       <div class="toolbar">
         <div class="v-field search">
           <label for="user-search">Buscar usuario</label>

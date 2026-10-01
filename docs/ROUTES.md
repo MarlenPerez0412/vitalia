@@ -28,6 +28,12 @@ Menú principal: barra inferior con Inicio, LIA, Salud, Bienestar y **Más**. «
 | `/senior/self-care` | `CatalogPageComponent` (`selfCare`) | Autocuidado |
 | `/senior/self-care/memory-demo` | `CognitiveActivityPageComponent` | Actividad cognitiva (memoria) |
 | `/senior/entertainment` | `CatalogPageComponent` (`entertainment`) | Entretenimiento |
+| `/senior/entertainment/movies` | `MoviesPageComponent` | Entretenimiento → Películas; «Volver» navega a `/senior/entertainment` |
+| `/senior/entertainment/theater` | `TheaterPageComponent` | Entretenimiento → Teatro; «Volver» navega a `/senior/entertainment` |
+| `/senior/entertainment/news` | `NewsPageComponent` | Entretenimiento → Noticias; «Volver» navega a `/senior/entertainment` |
+| `/senior/entertainment/music` | `MusicPageComponent` | Entretenimiento → Música; «Volver» navega a `/senior/entertainment` |
+| `/senior/entertainment/crafts` | `CraftsPageComponent` | Entretenimiento → Manualidades; «Volver» navega a `/senior/entertainment` |
+| `/senior/entertainment/activities` | `ActivitiesPageComponent` | Entretenimiento → Actividades recreativas; «Volver» navega a `/senior/entertainment` |
 | `/senior/profile` | `ProfilePageComponent` | Perfil: avatar, nombre, edad y 8 opciones |
 | `/senior/settings` | `SettingsPageComponent` | Configuración: comandos de voz, permisos, accesibilidad, privacidad |
 | `/senior/medications` | `MedicationsPageComponent` | Medicamentos |

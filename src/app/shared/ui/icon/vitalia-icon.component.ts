@@ -3,8 +3,8 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 export type VitaliaIconName =
   | 'activity' | 'alert' | 'bell' | 'brain' | 'check' | 'chevron-left' | 'chevron-right'
   | 'close' | 'emergency' | 'heart' | 'home' | 'logout' | 'menu' | 'microphone'
-  | 'pill' | 'phone' | 'shield' | 'sparkles' | 'user' | 'users'
-  | 'wallet' | 'play' | 'settings' | 'map-pin' | 'chart' | 'message' | 'clipboard' | 'lock';
+  | 'hand' | 'pill' | 'phone' | 'shield' | 'sparkles' | 'user' | 'users'
+  | 'wallet' | 'play' | 'settings' | 'map-pin' | 'chart' | 'message' | 'clipboard' | 'lock' | 'send';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -24,6 +24,7 @@ export type VitaliaIconName =
         @case ('close') { <path d="m6 6 12 12M18 6 6 18" /> }
         @case ('emergency') { <path d="M12 3v18M3 12h18" /> }
         @case ('heart') { <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.7-7.5 1.1-1.1a5.5 5.5 0 0 0 0-7.8Z" /> }
+        @case ('hand') { <path d="M7 11V5a1.5 1.5 0 0 1 3 0v5-7a1.5 1.5 0 0 1 3 0v7-6a1.5 1.5 0 0 1 3 0v7-4a1.5 1.5 0 0 1 3 0v6c0 5-3 8-7 8h-1c-3.5 0-6-2.2-7.2-5.4L3.5 13A1.8 1.8 0 0 1 7 11Z" /> }
         @case ('home') { <path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10M9 20v-6h6v6" /> }
         @case ('logout') { <path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-6" /> }
         @case ('menu') { <path d="M4 7h16M4 12h16M4 17h16" /> }
@@ -39,6 +40,7 @@ export type VitaliaIconName =
         @case ('map-pin') { <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" /> }
         @case ('chart') { <path d="M4 20V11M10 20V4M16 20v-7M21 20H3" /> }
         @case ('message') { <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z" /> }
+        @case ('send') { <path d="m22 2-7 20-4-9-9-4 20-7Z" /><path d="M22 2 11 13" /> }
         @case ('clipboard') { <rect x="6" y="4" width="12" height="17" rx="2" /><path d="M9 4h6v3H9zM9 12h6M9 16h4" /> }
         @case ('lock') { <rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /> }
         @case ('users') { <circle cx="9" cy="8" r="3" /><path d="M3 21a6 6 0 0 1 12 0M16 4a3 3 0 0 1 0 6M17 14a5 5 0 0 1 4 5" /> }

@@ -13,6 +13,7 @@ describe('EmergencyService', () => {
   let registry: EmergencyRegistryService;
 
   beforeEach(() => {
+    localStorage.clear();
     vi.useFakeTimers();
     getCurrentPosition.mockReset().mockResolvedValue(real);
     TestBed.configureTestingModule({

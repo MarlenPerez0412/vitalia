@@ -93,6 +93,12 @@ describe('LiaSpeechService', () => {
     expect(speech.currentMessage()).toBe('Hola, María.');
   });
 
+  it('keeps the voice at the browser maximum when a higher volume is requested', () => {
+    const speech = create();
+    void speech.speak('Hablar más fuerte.', { volume: 1.4 });
+    expect(last().volume).toBe(1);
+  });
+
   it('picks the voice when the browser loads voices asynchronously (voiceschanged)', () => {
     voices = [];
     const speech = create();

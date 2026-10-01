@@ -1,0 +1,13 @@
+.mw-center { align-items: center; display: flex; flex-direction: column; gap: var(--space-4); min-height: 16rem; text-align: center; }
+.mw-icon { font-size: 3.5rem; line-height: 1; }
+.mw-progress { color: var(--color-text-muted); font-weight: 700; margin: 0; text-align: center; }
+.mw-exercise { display: grid; gap: var(--space-5); }
+.mw-display { align-items: center; background: var(--color-surface-muted); border-radius: var(--radius-xl); display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-6); text-align: center; }
+.mw-big-emoji { font-size: 5rem; line-height: 1; }
+.mw-display h2 { margin: 0; }
+.mw-display p { color: var(--color-text-muted); font-size: var(--font-size-body-lg, 1.125rem); margin: 0; }
+.mw-bar-wrap { background: var(--color-surface-muted); border-radius: var(--radius-full, 9999px); height: .75rem; overflow: hidden; width: 100%; }
+.mw-bar { background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); border-radius: inherit; height: 100%; transition: width 100ms linear; }
+.mw-actions { flex-wrap: wrap; justify-content: center; }
+.mw-ok { background: var(--color-success-soft); border-color: var(--color-success); }
+.mw-ok p { color: var(--color-text-muted); }

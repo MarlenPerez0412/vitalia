@@ -15,6 +15,7 @@ import { StatusBadgeComponent, StatusBadgeVariant } from '../status-badge/status
       <div><p class="eyebrow">Próxima toma · {{ time() }}</p><h3>{{ name() }}</h3><p>{{ dose() }}</p></div>
       <div cardActions>
         <app-button variant="primary" icon="check" [disabled]="disabled()" (pressed)="confirmed.emit()">{{ actionLabel() }}</app-button>
+        @if (tertiaryActionLabel()) { <app-button variant="ghost" [disabled]="disabled()" (pressed)="skipped.emit()">{{ tertiaryActionLabel() }}</app-button> }
         @if (secondaryActionLabel()) { <app-button variant="ghost" [disabled]="disabled()" (pressed)="postponed.emit()">{{ secondaryActionLabel() }}</app-button> }
       </div>
     </app-card-shell>
@@ -34,8 +35,10 @@ export class MedicationCardComponent {
   readonly statusTone = input<StatusBadgeVariant>('pending');
   readonly actionLabel = input('Ya lo tomé');
   readonly secondaryActionLabel = input('');
+  readonly tertiaryActionLabel = input('');
   readonly disabled = input(false);
   readonly loading = input(false);
   readonly confirmed = output<void>();
   readonly postponed = output<void>();
+  readonly skipped = output<void>();
 }

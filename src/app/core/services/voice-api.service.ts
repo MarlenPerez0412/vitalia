@@ -1,8 +1,11 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, InjectionToken } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { AudioRecording, VOICE_TRANSCRIBE_ENDPOINT } from '../models/permission.models';
 import { encodeWav16kMono } from './wav-encoder';
+
+/** Tiempo máximo de espera para la respuesta del backend antes de abortar y mostrar error. */
+const TRANSCRIBE_TIMEOUT_MS = 15000;
 
 /** URL base del backend FastAPI; sobrescribible con un provider cuando exista configuracion por entorno. */
 export const VOICE_API_BASE_URL = new InjectionToken<string>('VOICE_API_BASE_URL', { providedIn: 'root', factory: () => 'http://localhost:8000' });
@@ -27,7 +30,9 @@ export class VoiceApiService {
   async transcribe(recording: AudioRecording): Promise<string> {
     const form = await this.buildForm(recording);
     try {
-      const response = await firstValueFrom(this.http.post<TranscriptionResponse>(`${this.baseUrl}${VOICE_TRANSCRIBE_ENDPOINT}`, form));
+      const response = await firstValueFrom(
+        this.http.post<TranscriptionResponse>(`${this.baseUrl}${VOICE_TRANSCRIBE_ENDPOINT}`, form).pipe(timeout(TRANSCRIBE_TIMEOUT_MS)),
+      );
       return (response?.text ?? '').trim();
     } catch (error) {
       const status = error instanceof HttpErrorResponse ? error.status : 0;

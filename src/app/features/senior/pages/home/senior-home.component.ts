@@ -5,6 +5,7 @@ import { AppButtonComponent } from '../../../../shared/ui/button/app-button.comp
 import { ModuleTileColor, ModuleTileComponent } from '../../../../shared/ui/cards/module-tile.component';
 import { VitaliaIconComponent, VitaliaIconName } from '../../../../shared/ui/icon/vitalia-icon.component';
 import { SeniorStateService } from '../../services/senior-state.service';
+import { HabitsService } from '../../services/habits.service';
 
 interface HomeModule { title: string; description: string; icon: VitaliaIconName; color: ModuleTileColor; route: string; }
 
@@ -15,7 +16,7 @@ interface HomeModule { title: string; description: string; icon: VitaliaIconName
   template: `
     <div class="home">
       <header class="hello">
-        <span class="hello__avatar" aria-hidden="true">{{ initials }}</span>
+        <img class="hello__avatar" src="https://images.unsplash.com/photo-1581579438747-1dc8d17bbce4?w=200&h=200&fit=crop&crop=face" alt="Foto de María Hernández" />
         <div>
           <p class="hello__date">{{ today }}</p>
           <h1>Hola, {{ profile.preferredName }} <span aria-hidden="true">👋</span></h1>
@@ -39,6 +40,15 @@ interface HomeModule { title: string; description: string; icon: VitaliaIconName
       </section>
       @if (state.lastFeedback()) { <div class="senior-page__notice" role="status"><app-vitalia-icon name="check" /><p><strong>Listo</strong><span>{{ state.lastFeedback() }}</span></p></div> }
 
+      <section class="today-activities" aria-labelledby="today-activities-title">
+        <div class="today-activities__head"><div><h2 id="today-activities-title">Actividades pendientes del día</h2><p>{{ habits.pendingToday().length }} por completar</p></div><app-button variant="ghost" (pressed)="go('/senior/activities')">Ver todas</app-button></div>
+        <div class="activity-list">
+          @for (item of habits.pendingToday().slice(0, 3); track item.habit.id) {
+            <article><span class="activity-list__icon"><app-vitalia-icon [name]="item.habit.category === 'COGNITION' ? 'brain' : item.habit.category === 'HEALTH' ? 'heart' : 'activity'" /></span><div><h3>{{ item.habit.name }}</h3><p>{{ item.habit.startTime }}@if (item.completion?.postponedUntil) { · Pospuesta }</p></div><div class="activity-list__actions"><app-button (pressed)="habits.complete(item.habit.id)">Realizado</app-button><app-button variant="secondary" (pressed)="habits.postpone(item.habit.id, 15)">Posponer</app-button><app-button variant="ghost" (pressed)="habits.skip(item.habit.id)">Omitir</app-button></div></article>
+          } @empty { <p class="activity-list__empty">Terminaste tus actividades de hoy.</p> }
+        </div>
+      </section>
+
       <button type="button" class="lia-cta" (click)="go('/senior/lia')">
         <span class="lia-cta__orb" aria-hidden="true"><app-vitalia-icon name="microphone" [size]="34" /></span>
         <span class="lia-cta__text"><strong><span aria-hidden="true">🎙 </span>Hablar con LIA</strong><small>Tu compañera inteligente: pregúntale lo que necesites.</small></span>
@@ -60,6 +70,7 @@ interface HomeModule { title: string; description: string; icon: VitaliaIconName
 export class SeniorHomeComponent {
   protected readonly profile = SENIOR_DEMO_PROFILE;
   protected readonly state = inject(SeniorStateService);
+  protected readonly habits = inject(HabitsService);
   private readonly router = inject(Router);
   protected readonly initials = this.profile.name.split(/\s+/).slice(0, 2).map((part) => part.charAt(0)).join('');
   protected readonly today = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());

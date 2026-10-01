@@ -44,33 +44,52 @@ def voice_health(request: Request) -> VoiceHealth:
 )
 async def transcribe(request: Request, audio: UploadFile | None = File(default=None)):
     """Audio -> PCM 16 kHz mono -> Vosk -> texto. El audio solo existe en memoria durante la peticion."""
+    logger.info(">>> PETICION DE TRANSCRIPCION recibida")
+
     if audio is None:
+        logger.warning(">>> ERROR: campo 'audio' ausente")
         return error(400, "AUDIO_REQUIRED", "Falta el archivo de audio en el campo 'audio'.")
     mime_type = normalize_mime(audio.content_type)
+    logger.info(">>> FORMATO recibido: %s", mime_type or "desconocido")
     if mime_type not in ALLOWED_MIME_TYPES:
+        logger.warning(">>> ERROR: formato no permitido: %s", mime_type)
         return error(415, "UNSUPPORTED_MEDIA_TYPE", f"Formato de audio no permitido: {mime_type or 'desconocido'}.")
 
     settings = request.app.state.settings
     data = await audio.read(settings.max_upload_bytes + 1)
     await audio.close()
     if not data:
+        logger.warning(">>> ERROR: archivo de audio vacio")
         return error(400, "EMPTY_AUDIO", "El archivo de audio esta vacio.")
     if len(data) > settings.max_upload_bytes:
+        logger.warning(">>> ERROR: audio demasiado grande (%d bytes)", len(data))
         return error(413, "AUDIO_TOO_LARGE", f"El audio supera el limite de {settings.max_upload_mb:g} MB.")
+
+    logger.info(">>> AUDIO recibido: %d bytes (%.1f KB)", len(data), len(data) / 1024)
 
     vosk: VoskService = request.app.state.vosk
     if not vosk.loaded:
+        logger.warning(">>> ERROR: modelo Vosk no cargado")
         return error(503, "MODEL_NOT_LOADED", "El reconocimiento de voz no esta disponible en este momento.")
 
     try:
         pcm = await run_in_threadpool(request.app.state.audio.to_pcm, data, mime_type)
         del data
+        logger.info(">>> PCM generado: %d bytes (%.1f s de audio)", len(pcm), len(pcm) / 2 / 16000)
         text = await run_in_threadpool(vosk.transcribe_pcm, pcm)
     except FfmpegUnavailableError as exc:
-        logger.error("Transcripcion rechazada: FFmpeg no disponible para %s", mime_type)
+        logger.error(">>> ERROR: FFmpeg no disponible para %s", mime_type)
         return error(503, "FFMPEG_UNAVAILABLE", str(exc))
     except InvalidAudioError as exc:
+        logger.error(">>> ERROR: audio invalido: %s", exc)
         return error(400, "INVALID_AUDIO", str(exc))
     except VoskUnavailableError:
+        logger.error(">>> ERROR: Vosk no disponible")
         return error(503, "MODEL_NOT_LOADED", "El reconocimiento de voz no esta disponible en este momento.")
+
+    if text:
+        logger.info(">>> VOSK ESCUCHO: '%s'", text)
+    else:
+        logger.warning(">>> VOSK NO RECONOCIO NADA (texto vacio) - posible silencio, voz baja o idioma incorrecto")
+
     return TranscriptionResponse(text=text)

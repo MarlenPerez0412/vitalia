@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { AudioCaptureService } from '../../../core/services/audio-capture.service';
+import { AudioRecording } from '../../../core/models/permission.models';
 import { LiaSpeechService } from '../../../core/services/lia-speech.service';
 import { LocationService } from '../../../core/services/location.service';
 import { PermissionsService } from '../../../core/services/permissions.service';
@@ -14,6 +15,9 @@ import { VoiceCommandService } from './voice-command.service';
 describe('VoiceCommandService', () => {
   const startContinuous = vi.fn();
   const stopContinuous = vi.fn();
+  const transcribe = vi.fn();
+  let emitUtterance: ((recording: AudioRecording) => void) | undefined;
+  const recording: AudioRecording = { blob: new Blob(['audio']), mimeType: 'audio/wav', durationMs: 100, createdAt: '' };
   let voice: VoiceCommandService;
   let emergency: EmergencyService;
   let navigateByUrl: ReturnType<typeof vi.spyOn>;
@@ -24,13 +28,20 @@ describe('VoiceCommandService', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
+    localStorage.clear();
     startContinuous.mockReset().mockResolvedValue(true);
     stopContinuous.mockReset();
+    transcribe.mockReset();
+    emitUtterance = undefined;
+    startContinuous.mockImplementation(async (onUtterance: (recording: AudioRecording) => void) => {
+      emitUtterance = onUtterance;
+      return true;
+    });
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
         { provide: AudioCaptureService, useValue: { startContinuous, stopContinuous, hearingSpeech: () => false, errorMessage: () => '' } },
-        { provide: VoiceApiService, useValue: { transcribe: vi.fn() } },
+        { provide: VoiceApiService, useValue: { transcribe } },
         { provide: PermissionsService, useValue: { checkMicrophonePermission: async () => 'granted', needsExplanation: async () => false, markExplanationSeen: vi.fn() } },
         { provide: LocationService, useValue: { getCurrentPosition: vi.fn().mockResolvedValue(null), getDemoPosition: vi.fn(), status: () => 'denied' } },
       ],
@@ -54,7 +65,7 @@ describe('VoiceCommandService', () => {
     expect(startContinuous).not.toHaveBeenCalled();
     await voice.acceptConsent();
     expect(startContinuous).toHaveBeenCalledOnce();
-    expect(voice.state()).toBe('listening');
+    expect(voice.state()).toBe('wake-listening');
     voice.disable();
     expect(stopContinuous).toHaveBeenCalled();
     expect(voice.state()).toBe('off');
@@ -94,7 +105,7 @@ describe('VoiceCommandService', () => {
     const prompt = voice.prompt();
     expect(prompt?.kind).toBe('CALL');
     expect(prompt?.kind === 'CALL' && prompt.contact).toEqual(TestBed.inject(ContactsService).findByRelationship('hija'));
-    expect(voice.feedback()?.message).toBe('Prepararé una llamada para Ana Hernández.');
+    expect(voice.feedback()?.message).toBe('Encontré a Ana Hernández. ¿Quieres que abra el marcador para llamarla?');
     await voice.handleTranscript('sí');
     expect(voice.prompt()?.kind).toBe('CALL');
     expect(voice.feedback()?.message).toContain('Pulsa «Llamar a Ana»');
@@ -116,6 +127,26 @@ describe('VoiceCommandService', () => {
     await voice.handleTranscript('hoy hace buen día para salir');
     expect(voice.feedback()).toBeNull();
     expect(navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('keeps passive listening until "Hola LIA" and reuses the same listener for the command', async () => {
+    transcribe.mockResolvedValueOnce('hoy hace buen día');
+    await voice.acceptConsent();
+    expect(voice.state()).toBe('wake-listening');
+    emitUtterance?.(recording);
+    await vi.waitFor(() => expect(transcribe).toHaveBeenCalledOnce());
+    expect(voice.state()).toBe('wake-listening');
+    expect(navigateByUrl).not.toHaveBeenCalled();
+
+    transcribe.mockResolvedValueOnce('hola lia');
+    emitUtterance?.(recording);
+    await vi.waitFor(() => expect(voice.state()).toBe('command-listening'));
+    expect(navigateByUrl).not.toHaveBeenCalled();
+
+    transcribe.mockResolvedValueOnce('lia abre emergencia');
+    emitUtterance?.(recording);
+    await vi.waitFor(() => expect(navigateByUrl).toHaveBeenCalledWith('/senior/emergency'));
+    expect(startContinuous).toHaveBeenCalledOnce();
   });
 
   it('speaks the "me siento mal" flow: question, confirmation and the real emergency progress', async () => {
@@ -141,7 +172,7 @@ describe('VoiceCommandService', () => {
 
   it('"LIA necesito ayuda" answers and "cancelar" confirms the real cancellation', async () => {
     await voice.handleTranscript('lia necesito ayuda');
-    expect(spoken().at(-1)).toMatch(/^Sí, te escuché\. Voy a ayudarte\./);
+    expect(spoken().at(-1)).toBe('Te escuché. Estoy contigo. ¿Quieres que active la solicitud de ayuda y contacte a tu familiar de emergencia?');
     await voice.handleTranscript('cancelar');
     expect(emergency.step()).toBe('cancelled');
     expect(lastSpoken()).toEqual(['Está bien. He cancelado la acción.', expect.objectContaining({ priority: 'CRITICAL', interrupt: true })]);
@@ -154,7 +185,7 @@ describe('VoiceCommandService', () => {
     const daughter = contacts.findByRelationship('hija')!;
     const first = daughter.name.split(' ')[0];
     await voice.handleTranscript('lia llama a mi hija');
-    expect(lastSpoken()).toEqual([`Encontré a ${daughter.name}. ¿Quieres llamarla?`, expect.objectContaining({ priority: 'HIGH' })]);
+    expect(lastSpoken()).toEqual([`Encontré a ${daughter.name}. ¿Quieres que abra el marcador para llamarla?`, expect.objectContaining({ priority: 'HIGH' })]);
     await voice.handleTranscript('sí');
     expect(spoken().at(-1)).toBe(`De acuerdo. Para abrir el marcador, pulsa Llamar a ${first}.`);
     voice.announceCall(daughter);
@@ -174,7 +205,7 @@ describe('VoiceCommandService', () => {
     let answer = voice.handleTranscript('lia qué medicamento me toca');
     await vi.advanceTimersByTimeAsync(700);
     await answer;
-    expect(spoken().at(-1)).toBe('Tu próximo medicamento es Metformina de 500 miligramos a las 10 de la mañana.');
+    expect(spoken().at(-1)).toBe('Tu próximo medicamento es Metformina de 500 miligramos a las 10 de la mañana. ¿Quieres que marque la toma como realizada cuando lo tomes?');
 
     const state = TestBed.inject(SeniorStateService);
     state.medications().filter((item) => item.status !== 'TAKEN').forEach((item) => state.takeMedication(item.id));
@@ -190,9 +221,9 @@ describe('VoiceCommandService', () => {
     const coordinator = TestBed.inject(VoiceSessionCoordinatorService);
     coordinator.beginSpeech();
     expect(stopContinuous).toHaveBeenCalled();
-    expect(voice.state()).toBe('paused-speech');
+    expect(voice.state()).toBe('speaking');
     coordinator.endSpeech();
-    await vi.waitFor(() => expect(voice.state()).toBe('listening'));
+    await vi.waitFor(() => expect(voice.state()).toBe('wake-listening'));
     expect(startContinuous).toHaveBeenCalledTimes(2);
   });
 
@@ -204,7 +235,7 @@ describe('VoiceCommandService', () => {
     expect(stopContinuous).toHaveBeenCalled();
     expect(voice.state()).toBe('paused-lia');
     coordinator.releaseLia();
-    await vi.waitFor(() => expect(voice.state()).toBe('listening'));
+    await vi.waitFor(() => expect(voice.state()).toBe('wake-listening'));
     expect(startContinuous).toHaveBeenCalledTimes(2);
   });
 });

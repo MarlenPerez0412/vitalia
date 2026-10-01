@@ -9,7 +9,7 @@ import { NavigationItem } from './navigation.models';
   selector: 'app-desktop-sidebar',
   template: `
     <aside [class.collapsed]="collapsed()">
-      <div class="brand-row"><a class="brand" [routerLink]="homePath()"><span>V</span><strong>VITALIA</strong></a><button type="button" (click)="collapsePressed.emit()" [attr.aria-label]="collapsed() ? 'Expandir navegación' : 'Contraer navegación'"><app-vitalia-icon [name]="collapsed() ? 'chevron-right' : 'chevron-left'" [size]="19" /></button></div>
+      <div class="brand-row"><a class="brand" [routerLink]="homePath()"><img src="vitalia-icon.jpg" alt="" aria-hidden="true" class="brand-logo" /><strong>VITALIA</strong></a><button type="button" (click)="collapsePressed.emit()" [attr.aria-label]="collapsed() ? 'Expandir navegación' : 'Contraer navegación'"><app-vitalia-icon [name]="collapsed() ? 'chevron-right' : 'chevron-left'" [size]="19" /></button></div>
       <div class="identity"><span aria-hidden="true">{{ displayName().charAt(0).toUpperCase() }}</span><div><strong>{{ displayName() }}</strong><small>{{ sectionName() }}</small></div></div>
       <nav aria-label="Navegación principal">
         @for (item of items(); track item.label) {
