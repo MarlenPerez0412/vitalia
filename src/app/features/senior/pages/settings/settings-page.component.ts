@@ -29,6 +29,7 @@ const PERMISSION_LABELS: Record<VitaliaPermissionState, { label: string; tone: S
           <app-status-badge [variant]="voice.enabled() ? 'success' : 'normal'">{{ voice.enabled() ? 'Activos' : 'Desactivados' }}</app-status-badge>
           @if (voice.enabled()) { <app-button variant="ghost" icon="close" (pressed)="voice.disable()">Desactivar</app-button> }
           @else { <app-button variant="voice" icon="microphone" (pressed)="voice.requestEnable()">Activar comandos de voz</app-button> }
+          <app-button variant="secondary" (pressed)="go('/senior/settings/voice-commands')">Personalizar comandos</app-button>
         </div>
         <p class="examples">Ejemplos: «LIA, necesito ayuda», «LIA, me siento mal», «LIA, llama a mi hija», «LIA, ¿dónde estoy?», «LIA, ¿qué medicamento me toca?».</p>
       </section>

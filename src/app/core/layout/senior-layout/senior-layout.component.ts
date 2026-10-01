@@ -45,6 +45,7 @@ export const SENIOR_NAVIGATION: readonly NavigationItem[] = [
       <app-senior-bottom-navigation [items]="primaryNav" moreLabel="Más" [moreExpanded]="menuOpen()" (morePressed)="menuOpen.set(true)" />
       <app-mobile-drawer [open]="menuOpen()" [responsive]="false" label="Menú de VITALIA" sectionName="Mi espacio"
         [displayName]="auth.currentUser()?.displayName ?? ''" homePath="/senior" [items]="fullNav"
+        photoUrl="https://images.unsplash.com/photo-1581579438747-1dc8d17bbce4?w=200&h=200&fit=crop&crop=face"
         (closed)="menuOpen.set(false)" (logoutPressed)="logout()" />
       <ng-content select="[layoutOverlay]" />
     </div>

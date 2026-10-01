@@ -1,9 +1,10 @@
+import { LocalizedText, VariantId } from '../../../core/i18n/language.models';
 import { EmergencyEventRecord } from '../../../core/models/emergency.models';
 import { VitaliaIconName } from '../../../shared/ui/icon/vitalia-icon.component';
 import { ModuleTileColor } from '../../../shared/ui/cards/module-tile.component';
 import { StatusBadgeVariant } from '../../../shared/ui/status-badge/status-badge.component';
 
-export type MedicationDemoStatus = 'TAKEN' | 'PENDING' | 'UPCOMING';
+export type MedicationDemoStatus = 'TAKEN' | 'PENDING' | 'UPCOMING' | 'SKIPPED';
 export type MedicationPeriod = 'MORNING' | 'AFTERNOON' | 'NIGHT';
 
 export interface MedicationDemo {
@@ -56,20 +57,53 @@ export interface PreventFactor {
 
 export type LiaState = 'idle' | 'listening' | 'processing' | 'speaking' | 'completed' | 'error';
 export type LiaIntent =
-  | 'NEXT_MEDICATION' | 'MEDICATION_TAKEN' | 'START_CHECKIN' | 'CALL_FAMILY' | 'START_EMERGENCY' | 'OPEN_LOCATION'
+  | 'NEXT_MEDICATION' | 'MEDICATION_TAKEN' | 'START_CHECKIN' | 'CALL_FAMILY' | 'CALL_DAUGHTER' | 'START_EMERGENCY' | 'OPEN_LOCATION'
   | 'PENSION_INFO' | 'MEMORY_ACTIVITY' | 'UNKNOWN';
-export interface LiaAction { label: string; route: string; /** Inicia el flujo de emergencia (fuente LIA) antes de navegar. */ emergency?: boolean; }
+export interface LiaAction {
+  label: string;
+  route: string;
+  /** Inicia el flujo de emergencia (fuente LIA) antes de navegar. */
+  emergency?: boolean;
+  /** Abre la confirmación de llamada a este contacto (el marcador solo se abre al pulsar «Llamar»). */
+  callContactId?: string;
+}
 /** Pantalla existente que LIA abre por si misma despues de responder. */
 export interface LiaNavigation { route: string; queryParams?: Record<string, string | number>; }
 export interface LiaReply {
   intent: LiaIntent;
+  /** Texto visible: el de la variante de la respuesta o, si falta su traduccion validada, el espanol. */
   text: string;
   action?: LiaAction;
   /** Version para la voz de LIA cuando difiere del texto visible. */
   speech?: string;
   opens?: LiaNavigation;
+  /** Texto localizado de la respuesta (variante, validacion y respaldo) para la capa de salida. */
+  message: LocalizedText;
+  /** Version hablada localizada, si difiere de `message`. */
+  spoken?: LocalizedText;
+  /** Traducción al español de una respuesta en lengua indígena piloto. */
+  spanishTranslation?: string;
 }
-export interface LiaMessage { id: string; sender: 'user' | 'lia'; text: string; confirmation?: boolean; viaVoice?: boolean; action?: LiaAction; }
+export interface LiaMessage {
+  id: string;
+  sender: 'user' | 'lia';
+  text: string;
+  confirmation?: boolean;
+  viaVoice?: boolean;
+  action?: LiaAction;
+  /** Intención resuelta; permite mostrar datos de dominio sin analizar el texto de la burbuja. */
+  intent?: LiaIntent;
+  /** Lengua del mensaje (entrada o respuesta). */
+  variant?: VariantId;
+  /** Se muestra en espanol porque la lengua de la conversacion no tiene esa cadena. */
+  translationPending?: boolean;
+  /** Frase predeterminada de un idioma piloto (sin validacion nativa): se indica en pantalla. */
+  pilotText?: boolean;
+  /** LIA lo leyo en espanol porque la persona permitio ese respaldo. */
+  spanishVoice?: boolean;
+  /** Traducción al español de la respuesta en lengua indígena piloto. */
+  spanishTranslation?: string;
+}
 export type AccessibilityMode = 'standard' | 'accessible' | 'assisted' | 'simplified';
 export type EmergencyReason = 'Me siento mal' | 'Me caí' | 'Estoy mareada' | 'Otra emergencia' | 'Necesito ayuda';
 export type EmergencyStep = 'idle' | 'selected' | 'countdown' | 'confirmed' | 'locating' | 'location-fallback' | 'contacted' | 'shared' | 'registered' | 'cancelled';

@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.entertainment import router as entertainment_router
 from app.api.voice import router as voice_router
 from app.core.config import Settings, get_settings
 from app.services.audio_service import AudioService
@@ -39,6 +40,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["Content-Type"],
     )
     app.include_router(voice_router)
+    app.include_router(entertainment_router)
 
     @app.get("/health")
     def health() -> dict[str, str]:

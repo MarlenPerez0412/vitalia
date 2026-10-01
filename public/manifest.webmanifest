@@ -6,5 +6,8 @@
   "display": "standalone",
   "background_color": "#f4faf9",
   "theme_color": "#118f88",
-  "icons": [{ "src": "favicon.ico", "sizes": "any", "type": "image/x-icon" }]
+  "icons": [
+    { "src": "favicon.ico", "sizes": "any", "type": "image/x-icon" },
+    { "src": "vitalia-icon.jpg", "sizes": "any", "type": "image/jpeg", "purpose": "any maskable" }
+  ]
 }

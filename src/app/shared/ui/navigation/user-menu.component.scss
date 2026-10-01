@@ -27,6 +27,7 @@
   height: 2.5rem;
   justify-content: center;
 }
+.avatar--photo { display: block; object-fit: cover; }
 
 .trigger .name { color: var(--color-text); display: none; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .trigger .caret { color: var(--color-text-muted); display: none; flex: 0 0 auto; transform: rotate(90deg); transition: transform var(--motion-fast); }

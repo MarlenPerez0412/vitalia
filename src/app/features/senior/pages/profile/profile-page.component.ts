@@ -22,7 +22,7 @@ export function ageFrom(birthDate: string, today = new Date()): number {
   template: `
     <app-senior-page eyebrow="Mi información" title="Perfil" description="Tus datos y preferencias, siempre bajo tu control." backPath="/senior">
       <section class="identity" aria-label="Mis datos principales">
-        <span class="identity__avatar" aria-hidden="true">{{ initials }}</span>
+        <img class="identity__avatar" src="https://images.unsplash.com/photo-1581579438747-1dc8d17bbce4?w=300&h=300&fit=crop&crop=face" alt="Foto de María Hernández" />
         <div>
           <h2>{{ profile.name }}</h2>
           <p>{{ age }} años · {{ profile.healthInstitution }}</p>
@@ -44,7 +44,7 @@ export function ageFrom(birthDate: string, today = new Date()): number {
   `,
   styles: `
     .identity { align-items: center; background: linear-gradient(135deg, color-mix(in srgb, var(--color-module-security) 40%, white), color-mix(in srgb, var(--color-module-family) 40%, white)); border-radius: var(--radius-xl); display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-6) var(--space-4); text-align: center; }
-    .identity__avatar { align-items: center; background: linear-gradient(145deg, var(--color-primary), var(--color-secondary)); border: .35rem solid var(--color-surface); border-radius: 50%; box-shadow: var(--shadow-md); color: var(--color-on-primary); display: inline-flex; font-size: 2.4rem; font-weight: 900; height: 7.5rem; justify-content: center; width: 7.5rem; }
+    .identity__avatar { border: .35rem solid var(--color-surface); border-radius: 50%; box-shadow: var(--shadow-md); display: block; height: 7.5rem; object-fit: cover; width: 7.5rem; }
     .identity h2 { font-size: var(--font-size-heading); line-height: var(--line-height-tight); margin: 0; }
     .identity p { color: var(--color-text-on-tint); font-size: var(--font-size-lead); font-weight: 700; margin: var(--space-1) 0 0; }
     .options { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); list-style: none; margin: 0; padding: 0; }

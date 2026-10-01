@@ -22,7 +22,7 @@ interface DemoAccess {
     <main class="login">
       <section class="brand-side" aria-labelledby="brand-title">
         <div class="brand-side__inner">
-          <p class="logo"><span class="logo__mark" aria-hidden="true">V</span><span class="logo__word">VITALIA</span></p>
+          <p class="logo"><img src="vitalia-icon.jpg" alt="" aria-hidden="true" class="logo__mark" /><span class="logo__word">VITALIA</span></p>
           <h1 id="brand-title">Más autonomía, bienestar y seguridad para una vida plena.</h1>
           <div class="lia-card">
             <span class="lia-card__orb" aria-hidden="true"><app-vitalia-icon name="sparkles" [size]="28" /></span>

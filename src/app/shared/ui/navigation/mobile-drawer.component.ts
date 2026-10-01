@@ -12,8 +12,8 @@ import { NavigationItem } from './navigation.models';
     @if (open()) {
       <button class="backdrop" type="button" aria-label="Cerrar menú" (click)="closed.emit()"></button>
       <aside #panel role="dialog" aria-modal="true" [attr.aria-label]="label()" (keydown)="trapFocus($event)">
-        <div class="drawer-header"><a class="brand" [routerLink]="homePath()" (click)="closed.emit()"><span>V</span><strong>VITALIA</strong></a><button type="button" aria-label="Cerrar menú" (click)="closed.emit()"><app-vitalia-icon name="close" /></button></div>
-        <div class="identity"><span aria-hidden="true">{{ displayName().charAt(0).toUpperCase() }}</span><div><strong>{{ displayName() }}</strong><small>{{ sectionName() }}</small></div></div>
+        <div class="drawer-header"><a class="brand" [routerLink]="homePath()" (click)="closed.emit()"><img class="brand__logo" src="/vitalia-icon.jpg" alt="VITALIA" /><strong>VITALIA</strong></a><button type="button" aria-label="Cerrar menú" (click)="closed.emit()"><app-vitalia-icon name="close" /></button></div>
+        <div class="identity">@if (photoUrl()) { <img class="identity__photo" [src]="photoUrl()!" [alt]="displayName()" /> } @else { <span aria-hidden="true">{{ displayName().charAt(0).toUpperCase() }}</span> }<div><strong>{{ displayName() }}</strong><small>{{ sectionName() }}</small></div></div>
         <nav aria-label="Navegación principal">@for (item of items(); track item.label) { <a [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closed.emit()"><app-vitalia-icon [name]="item.icon" /><span>{{ item.label }}</span></a> }</nav>
         <button class="logout" type="button" (click)="logoutPressed.emit()"><app-vitalia-icon name="logout" /><span>Cerrar sesión</span></button>
       </aside>
@@ -25,6 +25,7 @@ export class MobileDrawerComponent {
   readonly open = input(false);
   readonly sectionName = input.required<string>();
   readonly displayName = input('');
+  readonly photoUrl = input<string | null>(null);
   readonly homePath = input.required<string>();
   readonly items = input.required<readonly NavigationItem[]>();
   /** `false` lo mantiene disponible en todos los anchos (menu "Mas" de Senior). */

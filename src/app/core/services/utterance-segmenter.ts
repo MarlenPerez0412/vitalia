@@ -14,7 +14,7 @@ export interface SegmenterOptions {
 }
 
 const DEFAULTS: SegmenterOptions = {
-  sampleRate: 16000, frameMs: 30, preRollMs: 400, minSpeechMs: 150, endSilenceMs: 800, maxUtteranceMs: 8000, minThreshold: 0.012, noiseMultiplier: 3,
+  sampleRate: 16000, frameMs: 30, preRollMs: 600, minSpeechMs: 150, endSilenceMs: 1400, maxUtteranceMs: 10000, minThreshold: 0.010, noiseMultiplier: 2.5,
 };
 
 /**

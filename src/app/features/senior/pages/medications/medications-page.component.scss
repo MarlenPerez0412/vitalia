@@ -3,3 +3,9 @@
 .period-heading > span { align-items: center; background: var(--color-secondary-soft); border-radius: 50%; color: var(--color-secondary); display: inline-flex; flex: 0 0 3rem; font-size: 1.4rem; height: 3rem; justify-content: center; }
 .period-heading h2 { font-size: var(--font-size-card-title); margin: 0; }
 .period-heading p { color: var(--color-text-muted); margin: 0; }
+.page-actions, .manage-actions { align-items: center; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.medication-form { display: grid; gap: var(--space-4); }
+.medication-form h2 { margin: 0; }
+.form-error { color: var(--color-emergency); font-weight: 700; margin: 0; }
+.medication-management { display: grid; gap: var(--space-2); min-width: 0; }
+.manage-actions { padding-inline: var(--space-2); }

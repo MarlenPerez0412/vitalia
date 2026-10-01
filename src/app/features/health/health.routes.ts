@@ -11,7 +11,7 @@ export const HEALTH_ROUTES: Routes = [
     children: [
       { path: '', loadComponent: workspacePage, data: { page: HEALTH_PAGES['dashboard'] }, title: 'Salud | VITALIA' },
       { path: 'patients', loadComponent: workspacePage, data: { page: HEALTH_PAGES['patients'] }, title: 'Pacientes | VITALIA' },
-      { path: 'follow-up', loadComponent: workspacePage, data: { page: HEALTH_PAGES['followUp'] }, title: 'Seguimiento | VITALIA' },
+      { path: 'follow-up', loadComponent: () => import('./pages/health-follow-up.component').then((component) => component.HealthFollowUpComponent), title: 'Seguimiento | VITALIA' },
       { path: 'medications', loadComponent: workspacePage, data: { page: HEALTH_PAGES['medications'] }, title: 'Medicamentos | VITALIA' },
       { path: 'wellbeing', loadComponent: workspacePage, data: { page: HEALTH_PAGES['wellbeing'] }, title: 'Bienestar | VITALIA' },
       { path: 'cognition', loadComponent: workspacePage, data: { page: HEALTH_PAGES['cognition'] }, title: 'Cognición | VITALIA' },

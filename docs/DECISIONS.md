@@ -27,3 +27,19 @@
   - Cola corta por prioridad (`CRITICAL` > `HIGH` > `NORMAL` > `LOW`) y watchdog, para que una emergencia nunca espere tras mensajes secundarios ni el micrófono quede bloqueado.
   - La voz describe solo hechos reales y nunca afirma avisos externos. En LIA, las respuestas con destino abren pantallas existentes tras hablar. En las solicitudes de emergencia por voz, la cuenta regresiva espera a que LIA termine para que «cancelar» siga siendo posible.
   - La preferencia se guarda en el dispositivo desde `core` (y no en `AccessibilityPreferencesService`) porque debe aplicarse antes de abrir Accesibilidad.
+
+- **D015 - Notificaciones mock por rol (2026-10-01):** `NotificationService` central con semilla JSON y `localStorage`.
+  - Cada notificación se dirige a un rol y opcionalmente a un usuario; la campana solo muestra las del usuario en sesión.
+  - Los servicios de dominio no crean notificaciones a mano: declaran el hecho a `NotificationEventsService`, que concentra las reglas de destinatarios (HEALTH no recibe emergencias familiares; Admin solo recibe hechos administrativos).
+  - Se evitan duplicados por rol, usuario, tipo, título y entidad (`once` para hechos que no deben repetirse, p. ej. Prevent).
+  - Es solo mock: sin backend, push ni tiempo real. Al llegar Supabase, el servicio se sustituye manteniendo el modelo `Notification`.
+- **D016 - Sincronización mock entre pestañas y consentimiento central (2026-10-01):**
+  - El estado compartido (notificaciones, emergencias, consentimientos, seguimientos) vive en `localStorage` y se refleja en otras pestañas con el evento `storage`; es la sustitución mock de un canal en tiempo real y se reemplazará por Supabase Realtime.
+  - Las emergencias se persisten sin coordenadas para no guardar ubicación en el navegador.
+  - `SharingConsentService` es la única fuente del consentimiento de María y condiciona a quién se notifica.
+- **D017 - LIA multilingüe por catálogo de intenciones, con náhuatl y zapoteco piloto (2026-10-01):**
+  - Las tres lenguas comparten las mismas intenciones y servicios de dominio. Solo cambian las frases, que viven en un catálogo central (`core/i18n/lia-multilingual-intents.ts`) junto con sus metadatos de piloto (`variantStatus`, `nativeValidation`).
+  - Agregar un idioma consiste en añadir una entrada de catálogo y su ficha en `language-variants.ts`; no se escribe lógica nueva.
+  - **Sin ASR nativo por ahora:** en los pilotos, Vosk español actúa como respaldo experimental y un matcher de frases (con `voskVariants` calibradas) decide con un umbral por intención. HELP es estricta para que una aproximación nunca dispare una emergencia.
+  - **Sin TTS nativo:** las respuestas piloto se muestran en texto y nunca se leen con la voz española. Un `PilotTtsProvider` detrás de un flag apagado por defecto deja la puerta abierta a un TTS validado.
+  - Se descarta el enfoque anterior (catálogo `zaa` con textos `[PENDIENTE_VALIDACION_NATIVA]` y modelos MMS) para el MVP. Las frases predeterminadas del equipo sustituyen a los marcadores y siguen marcadas como no validadas por hablantes nativos.

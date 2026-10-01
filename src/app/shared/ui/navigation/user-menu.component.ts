@@ -10,6 +10,7 @@ export interface UserMenuData {
   email: string;
   role: string;
   avatarInitial: string;
+  photoUrl: string | null;
 }
 
 export function roleLabel(role: Role): string {
@@ -38,7 +39,7 @@ let nextId = 0;
     @if (data(); as user) {
       <div class="user-menu">
         <button #trigger class="trigger" type="button" [attr.aria-expanded]="open()" [attr.aria-controls]="panelId" [attr.aria-label]="'Menú de cuenta de ' + user.name" (click)="toggle()">
-          <span class="avatar" aria-hidden="true">{{ user.avatarInitial }}</span>
+          @if (user.photoUrl) { <img class="avatar avatar--photo" [src]="user.photoUrl" [alt]="user.name" /> } @else { <span class="avatar" aria-hidden="true">{{ user.avatarInitial }}</span> }
           <strong class="name">{{ user.name }}</strong>
           <app-vitalia-icon class="caret" name="chevron-right" [size]="16" />
         </button>
@@ -46,7 +47,7 @@ let nextId = 0;
         @if (open()) {
           <div #panel [id]="panelId" class="panel" role="group" [attr.aria-label]="'Cuenta de ' + user.name" (keydown)="onKeydown($event)">
             <div class="identity">
-              <span class="avatar" aria-hidden="true">{{ user.avatarInitial }}</span>
+              @if (user.photoUrl) { <img class="avatar avatar--photo" [src]="user.photoUrl" [alt]="user.name" /> } @else { <span class="avatar" aria-hidden="true">{{ user.avatarInitial }}</span> }
               <div><strong>{{ user.name }}</strong><small>{{ user.email }}</small><small>{{ user.role }}</small></div>
             </div>
             <hr />
@@ -86,7 +87,8 @@ export class UserMenuComponent {
   protected readonly data = computed<UserMenuData | null>(() => {
     const user = this.auth.currentUser();
     if (!user) return null;
-    return { name: user.displayName, email: user.email, role: roleLabel(user.role), avatarInitial: user.displayName.charAt(0).toUpperCase() };
+    const photoUrl = user.role === 'SENIOR' ? 'https://images.unsplash.com/photo-1581579438747-1dc8d17bbce4?w=100&h=100&fit=crop&crop=face' : null;
+    return { name: user.displayName, email: user.email, role: roleLabel(user.role), avatarInitial: user.displayName.charAt(0).toUpperCase(), photoUrl };
   });
 
   private readonly accountPaths = computed(() => { const role = this.auth.currentUser()?.role; return role ? ACCOUNT_PATHS[role] ?? null : null; });

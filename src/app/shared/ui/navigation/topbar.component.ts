@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { VitaliaIconComponent } from '../icon/vitalia-icon.component';
+import { NotificationBellComponent } from './notification-bell.component';
 import { UserMenuComponent } from './user-menu.component';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, UserMenuComponent, VitaliaIconComponent],
+  imports: [NotificationBellComponent, RouterLink, UserMenuComponent, VitaliaIconComponent],
   selector: 'app-topbar',
   template: `
     <header>
@@ -15,11 +16,11 @@ import { UserMenuComponent } from './user-menu.component';
             <app-vitalia-icon name="menu" />
           </button>
         }
-        <a class="brand" [routerLink]="homePath()" aria-label="VITALIA, ir al inicio"><span>V</span><strong>VITALIA</strong></a>
+        <a class="brand" [routerLink]="homePath()" aria-label="VITALIA, ir al inicio"><img src="vitalia-icon.jpg" alt="" aria-hidden="true" class="brand-logo" /><strong>VITALIA</strong></a>
         <div class="context"><strong>{{ title() }}</strong>@if (subtitle()) { <small>{{ subtitle() }}</small> }</div>
       </div>
       <div class="actions">
-        <button class="icon-button" type="button" aria-label="Notificaciones" disabled title="Disponible próximamente"><app-vitalia-icon name="bell" /></button>
+        <app-notification-bell />
         <app-user-menu />
       </div>
     </header>

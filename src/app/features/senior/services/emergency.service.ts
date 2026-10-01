@@ -1,6 +1,9 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { EmergencyEventRecord, EmergencySource, EmergencyType } from '../../../core/models/emergency.models';
 import { LocationStatus, VitaliaLocation } from '../../../core/models/location.models';
+import { MessageKey } from '../../../core/i18n/language.models';
+import { PhrasebookService } from '../../../core/i18n/phrasebook.service';
+import { LiaOutputService } from '../../../core/services/lia-output.service';
 import { LiaSpeechService } from '../../../core/services/lia-speech.service';
 import { LocationService } from '../../../core/services/location.service';
 import { PermissionsService } from '../../../core/services/permissions.service';
@@ -39,6 +42,8 @@ export class EmergencyService {
   private readonly locationService = inject(LocationService);
   private readonly permissions = inject(PermissionsService);
   private readonly speech = inject(LiaSpeechService);
+  private readonly output = inject(LiaOutputService);
+  private readonly phrases = inject(PhrasebookService);
   private timers: ReturnType<typeof setTimeout>[] = [];
   /** Invalida resultados asincronos (permiso, GPS) si el flujo se cancela o reinicia. */
   private flowId = 0;
@@ -113,7 +118,7 @@ export class EmergencyService {
     this.consentOpen.set(false);
     this.failure.set('declined');
     this.step.set('location-fallback');
-    this.narrate('Está bien. No usaré tu ubicación.');
+    this.narrate('emergency.locationDeclined');
   }
 
   async retryLocation(): Promise<void> {
@@ -168,13 +173,13 @@ export class EmergencyService {
   }
 
   private async locate(flow: number): Promise<void> {
-    this.narrate('Estoy obteniendo tu ubicación.');
+    this.narrate('emergency.locating');
     const location = await this.locationService.getCurrentPosition();
     if (flow !== this.flowId) return;
-    if (location) { this.narrate('Ubicación obtenida.'); this.proceed(location); return; }
+    if (location) { this.narrate('emergency.located'); this.proceed(location); return; }
     this.failure.set(this.locationService.status());
     this.step.set('location-fallback');
-    this.narrate('No pude obtener tu ubicación actual.');
+    this.narrate('emergency.locationFailed');
   }
 
   private proceed(location: VitaliaLocation | null): void {
@@ -186,14 +191,17 @@ export class EmergencyService {
       this.lastEvent.set(this.state.recordEmergency(reason, location ?? undefined, { type: this.type(), source: this.source(), contact: this.contact() }));
       this.step.set('registered');
       // Solo se registra en VITALIA (simulado): no se afirma haber avisado a nadie.
-      this.narrate('Tu solicitud de ayuda quedó registrada.');
+      this.narrate('emergency.registered');
     }, 1400));
   }
 
-  /** Voz de LIA para solicitudes iniciadas por voz; el boton conserva su flujo silencioso. */
-  private narrate(text: string): void {
+  /**
+   * Voz de LIA para solicitudes iniciadas por voz, en la lengua de la conversacion; el boton conserva su flujo
+   * silencioso. La voz nunca se espera: el flujo, el GPS y el registro siguen igual aunque falte la traduccion.
+   */
+  private narrate(key: MessageKey): void {
     if (this.source() === 'BUTTON') return;
-    void this.speech.speak(text, { priority: 'CRITICAL' });
+    this.output.deliver(this.phrases.t(key), { priority: 'CRITICAL' });
   }
 
   private clearTimers(): void {

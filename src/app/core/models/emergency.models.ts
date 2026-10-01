@@ -5,15 +5,18 @@ export type EmergencyType = 'HELP' | 'SICK' | 'FALL' | 'DIZZY' | 'OTHER';
 /** Origen de la solicitud: todas terminan en el mismo `EmergencyService`. */
 export type EmergencySource = 'BUTTON' | 'LIA' | 'GLOBAL_VOICE';
 
-/** Evento de emergencia simulado. Vive solo en memoria durante la sesion (sin persistencia ni envio real). */
+/** Evento de emergencia simulado (sin envio real). Se guarda en localStorage sin coordenadas, para que Care lo vea desde otra pestana. */
 export interface EmergencyEventRecord {
   id: string;
   seniorName: string;
   reason: string;
   type: EmergencyType;
   source: EmergencySource;
-  status: 'REGISTERED';
+  status: 'ACTIVE' | 'ATTENDED' | 'RESOLVED' | 'CANCELLED';
   createdAt: string;
+  attendedAt?: string;
+  resolvedAt?: string;
+  cancelledAt?: string;
   contactName?: string;
   contactRelationship?: string;
   latitude?: number;

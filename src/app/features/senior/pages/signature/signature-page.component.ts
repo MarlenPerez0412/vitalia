@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { SIGNATURE_METRICS } from '../../../../core/services/senior-mock-data';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { StatusBadgeComponent } from '../../../../shared/ui/status-badge/status-badge.component';
 import { SeniorPageComponent } from '../../components/senior-page/senior-page.component';
+import { VitaliaInsightsService } from '../../services/vitalia-insights.service';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -11,7 +11,7 @@ import { SeniorPageComponent } from '../../components/senior-page/senior-page.co
     <app-senior-page eyebrow="Tu rutina personal" title="Firma VITALIA" description="Una mirada a tus hábitos, comparada contigo misma." backPath="/senior/wellbeing">
       <div class="comparison"><strong>Comparado con tu propia rutina habitual.</strong><p>No te comparamos con otras personas.</p></div>
       <div class="metrics">
-        @for (metric of metrics; track metric.label) {
+        @for (metric of metrics(); track metric.label) {
           <article><div class="metric-top"><h2>{{ metric.label }}</h2><app-status-badge [variant]="metric.tone">{{ metric.value }}%</app-status-badge></div><div class="bar" [attr.aria-label]="metric.label + ': ' + metric.value + '%'" role="meter" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="metric.value"><span [style.width.%]="metric.value"></span></div><p>{{ metric.detail }}</p></article>
         }
       </div>
@@ -20,4 +20,4 @@ import { SeniorPageComponent } from '../../components/senior-page/senior-page.co
   `,
   styleUrl: './signature-page.component.scss',
 })
-export class SignaturePageComponent { protected readonly metrics = SIGNATURE_METRICS; }
+export class SignaturePageComponent { protected readonly metrics = inject(VitaliaInsightsService).metrics; }

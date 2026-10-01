@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     max_upload_mb: float = 10
     load_model_on_startup: bool = True
     temp_dir: Path = Path("temp")
+    # Entretenimiento: vacias = se usa el catalogo local de Angular.
+    tmdb_api_key: str = ""
+    ticketmaster_api_key: str = ""
+    news_api_key: str = ""
+    youtube_api_key: str = ""
 
     @field_validator("cors_origins", mode="before")
     @classmethod

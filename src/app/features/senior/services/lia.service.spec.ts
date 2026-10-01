@@ -27,7 +27,7 @@ describe('LiaService intents', () => {
 
 describe('LiaService speech', () => {
   let lia: LiaService;
-  beforeEach(() => { vi.useFakeTimers(); TestBed.configureTestingModule({}); lia = TestBed.inject(LiaService); });
+  beforeEach(() => { vi.useFakeTimers(); localStorage.clear(); TestBed.configureTestingModule({}); lia = TestBed.inject(LiaService); });
   afterEach(() => vi.useRealTimers());
 
   async function reply(text: string) {
@@ -52,9 +52,10 @@ describe('LiaService speech', () => {
   });
 
   it('reads the next medication from the state, not a fixed text', async () => {
-    expect((await reply('¿Qué medicamento me toca?')).speech).toBe('Tu próximo medicamento es Metformina de 500 miligramos a las 10 de la mañana.');
+    const question = ' ¿Quieres que marque la toma como realizada cuando lo tomes?';
+    expect((await reply('¿Qué medicamento me toca?')).speech).toBe(`Tu próximo medicamento es Metformina de 500 miligramos a las 10 de la mañana.${question}`);
     TestBed.inject(SeniorStateService).takeMedication('med-metformin');
-    expect((await reply('¿Qué medicamento me toca?')).speech).toBe('Tu próximo medicamento es Vitamina D, 1 cápsula, a las 2 de la tarde.');
+    expect((await reply('¿Qué medicamento me toca?')).speech).toBe(`Tu próximo medicamento es Vitamina D de 1 cápsula a las 2 de la tarde.${question}`);
   });
 
   it.each([
@@ -73,8 +74,69 @@ describe('LiaService speech', () => {
   it('the location screen is asked to search and an emergency never opens on its own', async () => {
     expect((await reply('Muéstrame mi ubicación')).opens?.queryParams).toHaveProperty('solicitar');
     const help = await reply('Necesito ayuda');
-    expect(help.speech).toMatch(/^Te escuché\. Voy a ayudarte\. ¿Quieres activar la solicitud de ayuda\?/);
+    expect(help.speech).toBe('Te escuché. Estoy contigo. ¿Quieres que active la solicitud de ayuda y contacte a tu familiar de emergencia?');
     expect(help.opens).toBeUndefined();
     expect(help.action?.emergency).toBe(true);
+  });
+});
+
+describe('LiaService language of the reply', () => {
+  beforeEach(() => { vi.useFakeTimers(); localStorage.clear(); TestBed.configureTestingModule({}); });
+  afterEach(() => vi.useRealTimers());
+
+  async function answer(reply$: ReturnType<LiaService['respond']>) {
+    const value = firstValueFrom(reply$);
+    await vi.advanceTimersByTimeAsync(700);
+    return value;
+  }
+
+  it('fills the pilot templates with the real medication, dose and time (nothing hardcoded)', async () => {
+    const lia = TestBed.inject(LiaService);
+    const state = TestBed.inject(SeniorStateService);
+    const next = state.nextMedication()!;
+    const doseOf = (dose: string) => dose.split('·')[0].trim();
+    const nahuatl = await answer(lia.respondToIntent('NEXT_MEDICATION', 'nahuatl-pilot'));
+    expect(nahuatl.message).toMatchObject({ variant: 'nahuatl-pilot', available: true, nativeValidation: false });
+    // Un dato que ya termina en punto ("10:00 a.m.") no duplica el punto final de la plantilla.
+    expect(nahuatl.text).toBe(`Nopa seyok pajtli tlen tijselis eli ${doseOf(next.dose)} ${next.name} ipan ${next.time}. ¿Tijneki ma nijtlalili se marca kej tijpixtok kema tijkuis?`.replace('..', '.'));
+    expect(nahuatl.text).not.toMatch(/\{\w+\}/);
+    // Al cambiar el dato, cambia la respuesta: no hay valores fijos.
+    state.takeMedication(next.id);
+    const following = state.nextMedication()!;
+    const zapotec = await answer(lia.respondToIntent('NEXT_MEDICATION', 'zapoteco-pilot'));
+    expect(zapotec.text).toContain(`nga ${doseOf(following.dose)} de ${following.name} ${following.time}`);
+    expect(zapotec.text).not.toContain(next.name);
+  });
+
+  it('names the real daughter in every language and offers the call confirmation', async () => {
+    const lia = TestBed.inject(LiaService);
+    for (const variant of ['es', 'nahuatl-pilot', 'zapoteco-pilot'] as const) {
+      const reply = await answer(lia.respondToIntent('CALL_DAUGHTER', variant));
+      expect(reply.text).toContain('Ana Hernández');
+      expect(reply.text).not.toContain('{contactName}');
+      expect(reply.action).toMatchObject({ label: 'Llamar a Ana', callContactId: expect.any(String) });
+    }
+  });
+
+  it('answers in the language of the input; Spanish typed in a pilot conversation gets a Spanish reply', () => {
+    const lia = TestBed.inject(LiaService);
+    expect(lia.resolve('LIA, xijnotza noichpoca.', 'nahuatl-pilot')).toMatchObject({ intent: 'CALL_DAUGHTER', variant: 'nahuatl-pilot' });
+    expect(lia.resolve('LIA, caquiiñeʼ gacanécabe naa.', 'zapoteco-pilot')).toMatchObject({ intent: 'START_EMERGENCY', variant: 'zapoteco-pilot' });
+    expect(lia.resolve('¿Qué medicamento me toca?', 'zapoteco-pilot')).toMatchObject({ intent: 'NEXT_MEDICATION', variant: 'es' });
+  });
+
+  it('an unrecognised pilot phrase gets the Spanish notice and no action', async () => {
+    const lia = TestBed.inject(LiaService);
+    const reply = await answer(lia.respond('tlen onkak ipan kalli', 'nahuatl-pilot'));
+    expect(reply.intent).toBe('UNKNOWN');
+    expect(reply.text).toBe('No pude reconocer ese comando. Puedes repetirlo o usar español.');
+    expect(reply.message.available).toBe(false);
+    expect(reply.action).toBeUndefined();
+    expect(reply.opens).toBeUndefined();
+  });
+
+  it('the family reply names the real primary contact instead of a hardcoded name', async () => {
+    const lia = TestBed.inject(LiaService);
+    expect((await answer(lia.respond('Quiero llamar a mi familia'))).text).toBe('Ana Hernández aparece disponible. Puedo llevarte a Familia para llamarla o enviarle un mensaje simulado.');
   });
 });

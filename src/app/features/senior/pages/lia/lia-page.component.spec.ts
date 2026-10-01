@@ -20,6 +20,7 @@ describe('LiaPageComponent voice flow', () => {
 
   beforeEach(async () => {
     vi.useFakeTimers();
+    localStorage.clear();
     transcribe.mockReset();
     await TestBed.configureTestingModule({
       imports: [LiaPageComponent],
@@ -94,7 +95,7 @@ describe('LiaPageComponent voice flow', () => {
     expect(spoken().at(-1)).toBe('Estoy procesando lo que me dijiste. Espera un momento.');
     await vi.advanceTimersByTimeAsync(2200);
     await stopping;
-    expect(spoken().at(-1)).toBe('Tu próximo medicamento es Metformina de 500 miligramos a las 10 de la mañana.');
+    expect(spoken().at(-1)).toBe('Tu próximo medicamento es Metformina de 500 miligramos a las 10 de la mañana. ¿Quieres que marque la toma como realizada cuando lo tomes?');
     expect(spoken()).toHaveLength(3);
   });
 

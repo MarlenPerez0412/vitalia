@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { NotificationEventsService } from '../../../../core/services/notification-events.service';
+import { SharingConsentService } from '../../../../core/services/sharing-consent.service';
 import { VitaliaIconComponent } from '../../../../shared/ui/icon/vitalia-icon.component';
 import { SeniorPageComponent } from '../../components/senior-page/senior-page.component';
 import { ContactsService } from '../../services/contacts.service';
@@ -25,12 +27,14 @@ interface SharingOption { key: 'emergencies' | 'medications' | 'wellbeing' | 'co
 export class PrivacyPageComponent {
   protected readonly contact = inject(ContactsService).primaryEmergencyContact;
   protected initials(name: string): string { return name.split(/\s+/).slice(0, 2).map((part) => part.charAt(0)).join('').toUpperCase(); }
-  protected readonly sharing = signal({ emergencies: true, medications: true, wellbeing: true, continuousLocation: false });
+  private readonly consent = inject(SharingConsentService);
+  private readonly notificationEvents = inject(NotificationEventsService);
+  protected readonly sharing = this.consent.preferences;
   protected readonly options: readonly SharingOption[] = [
     { key: 'emergencies', label: 'Emergencias', description: 'Avisos y eventos de ayuda.' },
     { key: 'medications', label: 'Medicamentos', description: 'Horarios y confirmaciones.' },
     { key: 'wellbeing', label: 'Bienestar', description: 'Resumen autorizado, no notas privadas.' },
     { key: 'continuousLocation', label: 'Ubicación continua', description: 'Seguimiento fuera de emergencias.' },
   ];
-  protected toggle(key: SharingOption['key']): void { this.sharing.update((value) => ({ ...value, [key]: !value[key] })); }
+  protected toggle(key: SharingOption['key']): void { this.notificationEvents.sharingChanged(key, this.consent.toggle(key)); }
 }

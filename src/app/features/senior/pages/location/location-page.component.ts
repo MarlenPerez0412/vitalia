@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
-import { LiaSpeechService } from '../../../../core/services/lia-speech.service';
+import { PhrasebookService } from '../../../../core/i18n/phrasebook.service';
+import { LiaOutputService } from '../../../../core/services/lia-output.service';
 import { LocationService } from '../../../../core/services/location.service';
 import { PermissionsService } from '../../../../core/services/permissions.service';
 import { AppButtonComponent } from '../../../../shared/ui/button/app-button.component';
@@ -53,7 +54,8 @@ import { SeniorPageComponent } from '../../components/senior-page/senior-page.co
 export class LocationPageComponent {
   protected readonly location = inject(LocationService);
   private readonly permissions = inject(PermissionsService);
-  private readonly speech = inject(LiaSpeechService);
+  private readonly output = inject(LiaOutputService);
+  private readonly phrases = inject(PhrasebookService);
   protected readonly consentOpen = signal(false);
   private readonly declined = signal(false);
   /** La ubicacion se pidio a LIA: el resultado tambien se dice en voz alta. */
@@ -93,7 +95,7 @@ export class LocationPageComponent {
     if (!this.announce) return;
     this.announce = false;
     // Si falla, la pantalla ofrece «Usar ubicación de demostración».
-    void this.speech.speak(position ? 'Ya encontré tu ubicación. Te la muestro en el mapa.' : 'No pude obtener tu ubicación actual. Puedo mostrarte una ubicación de demostración.', { priority: 'HIGH' });
+    this.output.deliver(this.phrases.t(position ? 'location.found' : 'location.failed'), { priority: 'HIGH' });
   }
   protected useDemo(): void { this.declined.set(false); this.location.getDemoPosition(); }
   protected forget(): void { this.declined.set(false); this.location.clear(); }

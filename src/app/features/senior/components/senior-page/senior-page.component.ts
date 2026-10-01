@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, input, ViewEncapsulation } from '@angular/core';
-import { Router } from '@angular/router';
+import { NavigationService } from '../../../../core/services/navigation.service';
 import { AppButtonComponent } from '../../../../shared/ui/button/app-button.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
 
@@ -22,6 +22,6 @@ export class SeniorPageComponent {
   readonly title = input.required<string>();
   readonly description = input('');
   readonly backPath = input('');
-  private readonly router = inject(Router);
-  protected goBack(): void { void this.router.navigateByUrl(this.backPath()); }
+  private readonly navigation = inject(NavigationService);
+  protected goBack(): void { void this.navigation.goTo(this.backPath()); }
 }
